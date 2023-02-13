@@ -71,7 +71,9 @@ rule get_genome_data:
         )
         shell(  # extract regions of interest, here we extract AMA1 and K13 coding regions
             """
-            grep {output.gff} -e 'PF3D7_1133400\|PF3D7_1343700' | grep 'CDS' | bgzip > {output.regions}
+            grep {output.gff} -e 'PF3D7_1133400\|PF3D7_1343700' |\
+            grep 'CDS' |\
+            convert2bed --input=gff --output=bed > {output.regions}
             """
         )
 
@@ -141,7 +143,7 @@ rule bwa_map_reads:
                 {input.genomeIndex} \
                 {input.fastqR1} {input.fastqR2} |\
             samblaster --removeDups |\
-            samtools view -S -b |\
+            samtools view -S -b  --targets-file {input.regions} |\
             samtools sort -o {output.bam_sorted}
             """
         )
