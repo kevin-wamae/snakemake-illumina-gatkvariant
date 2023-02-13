@@ -1,0 +1,78 @@
+# ****************************************************************
+#                              DEPENDENCIES
+# ****************************************************************
+extra:
+   threads: 4
+
+# ****************************************************************
+#                              INPUT
+# ****************************************************************
+
+# fastq files, adapters and genome files
+input:
+   fastq: input/01_fastq/ # raw fastq files
+   adapters: input/02_adapters/NexteraPE-PE.fa # sequencing adapters
+   genome:
+      fasta: output/01_snpeff_database/genomes/P.falciparum.fa
+      gff: output/01_snpeff_database/P.falciparum/genes.gff
+      regions: input/02_genome/genome.bed.gz # bed file with regions of interest
+      url: https://plasmodb.org/common/downloads/release-51/Pfalciparum3D7/fasta/data/PlasmoDB-51_Pfalciparum3D7_Genome.fasta
+   
+
+
+# ****************************************************************
+#                              OUTPUT
+# ****************************************************************
+
+get_genome_data:
+   fasta: output/02_genome/genome.fa
+   fasta_idx: output/02_genome/genome.fa.fai
+   gff: output/02_genome/annotations.gff
+   regions: output/02_genome/regions.bed
+
+
+
+# trim_illumina_adapters - trim illumina adapters
+# ----------------------------------------------------------------
+fastp:
+   dir: output/03_fastq_trim/
+   min_len: 191
+
+
+
+# create_genome_index - generate index files for genome mapping
+# ----------------------------------------------------------------
+bwa:
+   dir: output/04_mapping/
+   index: output/04_mapping/genomeIndex/genome
+
+
+
+# merge_features - manipulate bed files
+# ----------------------------------------------------------------
+bed:
+   dir: output/06_bed_features/ 
+   gffToBed: output/06_bed_features/genome_annotations.bed
+
+
+
+# variant calling - call variants against reference genome
+# ----------------------------------------------------------------
+bcftools:
+   dir: output/07_variants/
+
+
+
+# annotate_variants - annotate variants in vcf file
+# ----------------------------------------------------------------
+snpEff:
+   config: .snpEff.config
+   database: P.falciparum
+   dir: output/08_variants_annotated/
+
+
+
+# extract_variants - extract variants from vcf file
+# ----------------------------------------------------------------
+snpSift:
+   dir: output/08_variants_annotated/

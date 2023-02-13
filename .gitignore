@@ -1,0 +1,10 @@
+# snakemake files
+**/.snakemake*
+
+# output files
+.snpEff.config
+output/*
+
+# gitignore files
+!input/.gitignore
+!output/.gitignore
