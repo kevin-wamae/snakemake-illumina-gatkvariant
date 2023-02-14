@@ -37,6 +37,8 @@ rule all:
         # bwa_map_reads
         expand(config["bwa"]["dir"] + "{sample}.bam", sample=SAMPLES),
         expand(config["bwa"]["dir"] + "{sample}.bam.bai", sample=SAMPLES),
+        expand(config["bwa"]["dir"] + "{sample}.bam.idxstats.txt", sample=SAMPLES),
+        expand(config["bwa"]["dir"] + "{sample}.bam.flagstats.txt", sample=SAMPLES),
         # bam_mark_dup=config["bwa"]["dir"] + "{sample}.markdup.bam",
         # bam_index=config["bwa"]["dir"] + "{sample}.markdup.bam.bai",
         # bam_to_bed=config["bwa"]["dir"] + "{sample}.markdup.bam.bed",
@@ -130,8 +132,10 @@ rule bwa_map_reads:
         fastqR2=rules.trim_fastq_files.output.out1,
         regions=rules.get_genome_data.output.regions,
     output:
-        bam_sorted=config["bwa"]["dir"] + "{sample}.bam",
-        bam_index=config["bwa"]["dir"] + "{sample}.bam.bai",
+        bam=config["bwa"]["dir"] + "{sample}.bam",
+        index=config["bwa"]["dir"] + "{sample}.bam.bai",
+        idxstats=config["bwa"]["dir"] + "{sample}.bam.idxstats.txt",
+        flagstats=config["bwa"]["dir"] + "{sample}.bam.flagstats.txt",
         # bam_to_bed=config["bwa"]["dir"] + "{sample}.markdup.bam.bed",
     params:
         threads=config["extra"]["threads"],
@@ -144,20 +148,24 @@ rule bwa_map_reads:
                 {input.fastqR1} {input.fastqR2} |\
             samblaster --removeDups |\
             samtools view -S -b  --targets-file {input.regions} |\
-            samtools sort -o {output.bam_sorted}
+            samtools sort -o {output.bam}
             """
         )
         shell(  # samtools index - index bam file for downstream analysis
             """
-            samtools index {output.bam_sorted} {output.bam_index}
+            samtools index {output.bam} {output.index}
             """
         )
-        # shell(  # convert bam file to bed format
-        #     """
-        #     bedtools bam_to_bed -cigar -i {output.bam_mark_dup} > {output.bam_to_bed}
-        #     """
-        # )
-
+        shell(  # stats for the bam index file
+            """
+            samtools idxstats {output.bam} > {output.idxstats}
+            """
+        )
+        shell(  # counts for each of 13 categories based primarily on bit flags in the FLAG field
+            """
+            samtools flagstats {output.bam} --output-fmt tsv > {output.flagstats}
+            """
+        )
 
 
 # # *********************************************************************
