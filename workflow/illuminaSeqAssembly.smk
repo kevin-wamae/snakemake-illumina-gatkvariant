@@ -55,6 +55,9 @@ rule get_genome_data:
         genome_index=config["get_genome_data"]["fasta_idx"],
         gff=config["get_genome_data"]["gff"],
         regions=config["get_genome_data"]["regions"],
+    params:
+        loci=config["get_genome_data"]["loci"],
+        feature=config["get_genome_data"]["feature"],
     run:
         shell(  # copy genome fasta file from snpeff database location
             """
@@ -73,8 +76,8 @@ rule get_genome_data:
         )
         shell(  # extract regions of interest, here we extract AMA1 and K13 coding regions
             """
-            grep {output.gff} -e 'PF3D7_1133400\|PF3D7_1343700' |\
-            grep 'CDS' |\
+            grep {output.gff} -e '{params.loci}' |\
+            grep -e '{params.feature}' |\
             convert2bed --input=gff --output=bed > {output.regions}
             """
         )

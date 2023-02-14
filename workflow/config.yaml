@@ -27,7 +27,9 @@ input:
 get_genome_data:
    fasta: output/02_genome/genome.fa
    fasta_idx: output/02_genome/genome.fa.fai
-   gff: output/02_genome/annotations.gff
+   gff: output/02_genome/annotations.gff,
+   loci: PF3D7_1133400\|PF3D7_1343700
+   feature: CDS
    regions: output/02_genome/regions.bed
 
 
