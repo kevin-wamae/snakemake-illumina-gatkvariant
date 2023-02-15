@@ -46,6 +46,7 @@ fastp:
 # ----------------------------------------------------------------
 bwa:
    dir: output/04_mapping/
+   dir_stats: output/04_mapping/mapping_stats/
    index: output/04_mapping/genomeIndex/genome
 
 

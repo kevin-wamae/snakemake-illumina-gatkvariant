@@ -37,8 +37,10 @@ rule all:
         # bwa_map_reads
         expand(config["bwa"]["dir"] + "{sample}.bam", sample=SAMPLES),
         expand(config["bwa"]["dir"] + "{sample}.bam.bai", sample=SAMPLES),
-        expand(config["bwa"]["dir"] + "{sample}.bam.idxstats.txt", sample=SAMPLES),
-        expand(config["bwa"]["dir"] + "{sample}.bam.flagstats.txt", sample=SAMPLES),
+        expand(config["bwa"]["dir_stats"] + "{sample}.bam.idxstats.txt", sample=SAMPLES),
+        expand(
+            config["bwa"]["dir_stats"] + "{sample}.bam.flagstats.txt", sample=SAMPLES
+        ),
         # bam_mark_dup=config["bwa"]["dir"] + "{sample}.markdup.bam",
         # bam_index=config["bwa"]["dir"] + "{sample}.markdup.bam.bai",
         # bam_to_bed=config["bwa"]["dir"] + "{sample}.markdup.bam.bed",
@@ -137,8 +139,8 @@ rule bwa_map_reads:
     output:
         bam=config["bwa"]["dir"] + "{sample}.bam",
         index=config["bwa"]["dir"] + "{sample}.bam.bai",
-        idxstats=config["bwa"]["dir"] + "{sample}.bam.idxstats.txt",
-        flagstats=config["bwa"]["dir"] + "{sample}.bam.flagstats.txt",
+        idxstats=config["bwa"]["dir_stats"] + "{sample}.bam.idxstats.txt",
+        flagstats=config["bwa"]["dir_stats"] + "{sample}.bam.flagstats.txt",
         # bam_to_bed=config["bwa"]["dir"] + "{sample}.markdup.bam.bed",
     params:
         threads=config["extra"]["threads"],
@@ -149,7 +151,7 @@ rule bwa_map_reads:
                 {params.threads} \
                 {input.genomeIndex} \
                 {input.fastqR1} {input.fastqR2} |\
-            samblaster --removeDups |\
+            samblaster |\
             samtools view -S -b  --targets-file {input.regions} |\
             samtools sort -o {output.bam}
             """
