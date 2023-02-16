@@ -149,8 +149,8 @@ rule bwa_map_reads:
                 {params.threads} \
                 {input.genomeIndex} \
                 {input.fastqR1} {input.fastqR2} |\
-            samblaster |\
-            samtools view -S -b  --targets-file {input.regions} |\
+            samblaster -M |\
+            samtools view -S -b --targets-file {input.regions} |\
             samtools sort -o {output.bam}
             """
         )
