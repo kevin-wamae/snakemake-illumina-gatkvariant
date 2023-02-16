@@ -45,9 +45,15 @@ fastp:
 # create_genome_index - generate index files for genome mapping
 # ----------------------------------------------------------------
 bwa:
-   dir: output/04_mapping/
-   dir_stats: output/04_mapping/mapping_stats/
-   index: output/04_mapping/genomeIndex/genome
+   dir: output/04_map_reads/
+   index: output/04_map_reads/genomeIndex/genome
+
+
+
+# mapping_qual_stats - get mapping qual statistics
+# ----------------------------------------------------------------
+bam:
+   dir: output/05_map_quality_stats/
 
 
 
