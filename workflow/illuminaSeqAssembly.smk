@@ -142,15 +142,26 @@ rule bwa_map_reads:
         # bam_to_bed=config["bwa"]["dir"] + "{sample}.markdup.bam.bed",
     params:
         threads=config["extra"]["threads"],
+        mapping_qual=config["bwa"]["mapping_qual"],
+        exclude_flag=config["bwa"]["exclude_flag"],
     run:
-        shell(  # bwa mem - map reads to reference genome
+        shell(
+            # bwa mem - map reads to reference genome
+            # samblaster - mark duplicates
+            # samtools view - convert sam to bam
+            #  - remove reads with mapping quality < 60
+            #  - remove reads with flag 4 (unmapped)
+            # samtools sort - sort bam file
             """
             bwa mem -M -t \
                 {params.threads} \
                 {input.genomeIndex} \
                 {input.fastqR1} {input.fastqR2} |\
             samblaster -M |\
-            samtools view -S -b --targets-file {input.regions} |\
+            samtools view -S -b \
+                --targets-file {input.regions} \
+                --min-MQ {params.mapping_qual} \
+                --exclude-flags {params.exclude_flag} |\
             samtools sort -o {output.bam}
             """
         )
