@@ -32,15 +32,21 @@ rule all:
         config["get_genome_data"]["regions"],
         # ------------------------------------
         # bwa_index_genome
-        config["bwa"]["index"],
+        config["bwa"]["genome_index"],
         # ------------------------------------
         # bwa_map_reads
         expand(config["bwa"]["dir"] + "{sample}.bam", sample=SAMPLES),
         expand(config["bwa"]["dir"] + "{sample}.bam.bai", sample=SAMPLES),
         # ------------------------------------
-        # mapping_qual_stats
-        expand(config["bam"]["dir"] + "{sample}.bam.idxstats.txt", sample=SAMPLES),
-        expand(config["bam"]["dir"] + "{sample}.bam.flagstats.txt", sample=SAMPLES),
+        # samtools_mapping_stats
+        expand(
+            config["mapping_stats"]["dir"] + "{sample}.bam.idxstats.txt",
+            sample=SAMPLES,
+        ),
+        expand(
+            config["mapping_stats"]["dir"] + "{sample}.bam.flagstats.txt",
+            sample=SAMPLES,
+        ),
         # bam_mark_dup=config["bwa"]["dir"] + "{sample}.markdup.bam",
         # bam_index=config["bwa"]["dir"] + "{sample}.markdup.bam.bai",
         # bam_to_bed=config["bwa"]["dir"] + "{sample}.markdup.bam.bed",
@@ -134,10 +140,10 @@ rule bwa_index_genome:
     input:
         genome=rules.get_genome_data.output.genome,
     output:
-        genomeIndex=touch(config["bwa"]["index"]),
+        genome_index=touch(config["bwa"]["genome_index"]),
     shell:
         """
-        bwa index -p {output.genomeIndex} {input.genome}
+        bwa index -p {output.genome_index} {input.genome}
         """
 
 
@@ -147,7 +153,7 @@ rule bwa_index_genome:
 rule bwa_map_reads:
     input:
         genome=rules.get_genome_data.output.genome,
-        genomeIndex=rules.bwa_index_genome.output.genomeIndex,
+        genome_index=rules.bwa_index_genome.output.genome_index,
         fastqR1=rules.trim_fastq_files.output.out1,
         fastqR2=rules.trim_fastq_files.output.out1,
         regions=rules.get_genome_data.output.regions,
@@ -170,7 +176,7 @@ rule bwa_map_reads:
             """
             bwa mem -M -t \
                 {params.threads} \
-                {input.genomeIndex} \
+                {input.genome_index} \
                 {input.fastqR1} {input.fastqR2} |\
             samblaster -M \
                 --removeDups \
@@ -191,12 +197,12 @@ rule bwa_map_reads:
 
 # get bam file stats
 # *********************************************************************
-rule mapping_qual_stats:
+rule samtools_mapping_stats:
     input:
         bam=rules.bwa_map_reads.output.bam,
     output:
-        idxstats=config["bam"]["dir"] + "{sample}.bam.idxstats.txt",
-        flagstats=config["bam"]["dir"] + "{sample}.bam.flagstats.txt",
+        idxstats=config["mapping_stats"]["dir"] + "{sample}.bam.idxstats.txt",
+        flagstats=config["mapping_stats"]["dir"] + "{sample}.bam.flagstats.txt",
     run:
         shell(  # samtools idxstats - counts for each of 13 categories based primarily on bit flags in the FLAG field
             """
@@ -211,40 +217,6 @@ rule mapping_qual_stats:
 
 
 # # *********************************************************************
-# # bedtools - merge overlapping intervals
-# #  -s: merge features that are on the same strand
-# #  -i: input (bed/gff/vcf)
-# #  -c: report strand from bed file
-# #  -o: specify operation (distinct removes duplicates)
-# rule merge_features:
-#     input:
-#         bed=rules.map_reads.output.bam_to_bed,
-#         bam=rules.map_reads.output.bam_mark_dup,
-#     output:
-#         merged=config["bed"]["dir"] + "{sample}.merged.bed",
-#         bedCov=config["bed"]["dir"] + "{sample}.coverage.bed",
-#         annotated=config["bed"]["dir"] + "{sample}.annotated.bed",
-#     params:
-#         bed=rules.gff_to_bed.output.bed,
-#     run:
-#         shell(  # bedtools - merge overlapping intervals
-#             """
-#             bedtools merge -s -c 6,5 -o distinct,mean -i {input.bed} > {output.merged}
-#             """
-#         )
-#         shell(  # bedtools - compute coverate across genome features
-#             """
-#             bedtools genomecov -bg -ibam {input.bam} |\
-#             bedtools merge -c 4 -o median > {output.bedCov}
-#             """
-#         )
-#         shell(  # bedtools - annotate intervals in the bed file with features from
-#             # column 10 of .gff and collapse overlapping features
-#             """
-#             bedtools map -c 10 -o collapse -a {output.bedCov} -b {params.bed} > {output.annotated}
-#             """
-#         )
-# # *********************************************************************
 # # bcftools - variant calling
 # #   - bcftools mpileup - generates genotype likelihoods at each genomic
 # #     position with coverage.
@@ -252,7 +224,7 @@ rule mapping_qual_stats:
 # #   - bcftools filter - drop variants with QUAL<=20 and Depth of Coverage
 # rule bcftools_variant_calling:
 #     input:
-#         genomeIndex=rules.create_genome_index.input.genomeFasta,
+#         genome_index=rules.create_genome_index.input.genomeFasta,
 #         bam=rules.map_reads.output.bam_mark_dup,
 #         regions=config["input"]["genome"]["regions"],
 #     output:
@@ -263,14 +235,15 @@ rule mapping_qual_stats:
 #         """
 #         bcftools mpileup \
 #             --threads {params.threads} \
-#             --annotate FORMAT/AD,FORMAT/ADF,FORMAT/ADR,FORMAT/SP,FORMAT/QS,INFO/AD,INFO/ADF,INFO/ADR \
-#             --fasta-ref {input.genomeIndex} {input.bam} \
+#             --annotate FORMAT/AD,FORMAT/ADF,FORMAT/ADR,FORMAT/DP,FORMAT/SP,FORMAT/QS,INFO/AD,INFO/ADF,INFO/ADR \
+#             --fasta-ref {input.genome_index} {input.bam} \
 #             --output-type z |\
 #         bcftools call \
 #             --threads {params.threads} \
 #             --regions {input.regions} \
 #             --skip-variants indels \
-#             --multiallelic-caller --variants-only |\
+#             --multiallelic-caller \
+#             --variants-only |\
 #         bcftools filter \
 #             --threads {params.threads} \
 #             --soft-filter LowQual \
