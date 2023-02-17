@@ -47,9 +47,9 @@ rule all:
             config["mapping_stats"]["dir"] + "{sample}.bam.flagstats.txt",
             sample=SAMPLES,
         ),
-        # bam_mark_dup=config["bwa"]["dir"] + "{sample}.markdup.bam",
-        # bam_index=config["bwa"]["dir"] + "{sample}.markdup.bam.bai",
-        # bam_to_bed=config["bwa"]["dir"] + "{sample}.markdup.bam.bed",
+        # ------------------------------------
+        # bcftools_variant_calling
+        expand(config["bcftools"]["dir"] + "{sample}.vcf.gz", sample=SAMPLES),
 
 
 # genome data - download genome data
@@ -195,7 +195,7 @@ rule bwa_map_reads:
         )
 
 
-# get bam file stats
+# get mapping-quality statistics from BAM file
 # *********************************************************************
 rule samtools_mapping_stats:
     input:
@@ -216,40 +216,41 @@ rule samtools_mapping_stats:
         )
 
 
-# # *********************************************************************
-# # bcftools - variant calling
-# #   - bcftools mpileup - generates genotype likelihoods at each genomic
-# #     position with coverage.
-# #   - bcftools call - makes the actual calls
-# #   - bcftools filter - drop variants with QUAL<=20 and Depth of Coverage
-# rule bcftools_variant_calling:
-#     input:
-#         genome_index=rules.create_genome_index.input.genomeFasta,
-#         bam=rules.map_reads.output.bam_mark_dup,
-#         regions=config["input"]["genome"]["regions"],
-#     output:
-#         vcf=config["bcftools"]["dir"] + "{sample}.vcf.gz",
-#     params:
-#         threads=config["extra"]["threads"],
-#     shell:
-#         """
-#         bcftools mpileup \
-#             --threads {params.threads} \
-#             --annotate FORMAT/AD,FORMAT/ADF,FORMAT/ADR,FORMAT/DP,FORMAT/SP,FORMAT/QS,INFO/AD,INFO/ADF,INFO/ADR \
-#             --fasta-ref {input.genome_index} {input.bam} \
-#             --output-type z |\
-#         bcftools call \
-#             --threads {params.threads} \
-#             --regions {input.regions} \
-#             --skip-variants indels \
-#             --multiallelic-caller \
-#             --variants-only |\
-#         bcftools filter \
-#             --threads {params.threads} \
-#             --soft-filter LowQual \
-#             --include 'QUAL>20 || DP>100' \
-#             --output-type z --output {output.vcf}
-#         """
+# *********************************************************************
+# bcftools - variant calling
+#   - bcftools mpileup - generates genotype likelihoods at each genomic
+#     position with coverage.
+#   - bcftools call - makes the actual calls
+#   - bcftools filter - drop variants with QUAL<=20 and Depth of Coverage
+rule bcftools_variant_calling:
+    input:
+        genome=rules.get_genome_data.output.genome,
+        bam=rules.bwa_map_reads.output.bam,
+    output:
+        vcf=config["bcftools"]["dir"] + "{sample}.vcf.gz",
+    params:
+        threads=config["extra"]["threads"],
+    shell:
+        """
+        bcftools mpileup \
+            --threads {params.threads} \
+            --annotate FORMAT/AD,FORMAT/ADF,FORMAT/ADR,FORMAT/SP,FORMAT/QS,INFO/AD,INFO/ADF,INFO/ADR \
+            --fasta-ref {input.genome} \
+            --output-type z \
+            {input.bam} |\
+        bcftools call \
+            --threads {params.threads} \
+            --skip-variants indels \
+            --multiallelic-caller \
+            --variants-only |\
+        bcftools filter \
+            --threads {params.threads} \
+            --soft-filter LowQual \
+            --include 'QUAL>20 || DP>100' \
+            --output-type z --output {output.vcf}
+        """
+
+
 # # *********************************************************************
 # # snpEff - variant annotation and functional effect prediction
 # # *********************************************************************

@@ -61,20 +61,11 @@ mapping_stats:
 
 
 
-# merge_features - manipulate bed files
-# ----------------------------------------------------------------
-bed:
-   dir: output/05_map_quality_stats/ 
-   filter_feature: "protein_coding_gene"
-
-
-
 # variant calling - call variants against reference genome
 # ----------------------------------------------------------------
 bcftools:
-   dir: output/07_variants/
+   dir: output/06_variant_calling/
    min_base_qual: 20
-
 
 
 
