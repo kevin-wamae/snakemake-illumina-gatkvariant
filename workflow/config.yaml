@@ -27,9 +27,11 @@ input:
 get_genome_data:
    fasta: output/02_genome/genome.fa
    fasta_idx: output/02_genome/genome.fa.fai
-   gff: output/02_genome/annotations.gff,
+   gff: output/02_genome/annotations.gff
+   bed: output/02_genome/annotations.bed
    loci: PF3D7_1133400\|PF3D7_1343700
-   feature: CDS
+   feature_filter_genome: protein_coding_gene
+   feature_filter_variants: CDS   
    regions: output/02_genome/regions.bed
 
 
@@ -62,8 +64,8 @@ bam:
 # merge_features - manipulate bed files
 # ----------------------------------------------------------------
 bed:
-   dir: output/06_bed_features/ 
-   gffToBed: output/06_bed_features/genome_annotations.bed
+   dir: output/05_map_quality_stats/ 
+   filter_feature: "protein_coding_gene"
 
 
 

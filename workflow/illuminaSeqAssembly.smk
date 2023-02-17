@@ -56,12 +56,14 @@ rule get_genome_data:
         genome=config["get_genome_data"]["fasta"],
         genome_index=config["get_genome_data"]["fasta_idx"],
         gff=config["get_genome_data"]["gff"],
+        bed=config["get_genome_data"]["bed"],
         regions=config["get_genome_data"]["regions"],
     params:
         loci=config["get_genome_data"]["loci"],
-        feature=config["get_genome_data"]["feature"],
+        feature_genome=config["get_genome_data"]["feature_filter_genome"],
+        feature_variants=config["get_genome_data"]["feature_filter_variants"],
     run:
-        shell(  # copy genome fasta file from snpeff database location
+        shell(  # cp - copy genome fasta file from snpeff database location
             """
             cp -f {input.genome} {output.genome}
             """
@@ -71,15 +73,27 @@ rule get_genome_data:
             samtools faidx {output.genome}
             """
         )
-        shell(  # copy annotation file from snpeff database location
+        shell(  # cp - copy annotation file from snpeff database location
             """
             cp -f {input.gff} {output.gff}
             """
         )
-        shell(  # extract regions of interest, here we extract AMA1 and K13 coding regions
+        shell(
+            # bedops - convert genome annotation GFF to BED
+            #   - compared to the BED file containing the regions of interest (below), we will select
+            #     entire protein coding regions of the genome
+            """
+            convert2bed --input=gff --output=bed < {input.gff} | \
+                grep -e {params.feature_genome} > {output.bed}
+            """
+        )
+        shell(
+            # grep and bedops - extract regions of interest, here we extract AMA1 and K13 coding regions
+            #   - compared to the BED file containing the protein coding regions (above), we will only
+            #     select regions within the coding regions of the genome
             """
             grep {output.gff} -e '{params.loci}' |\
-            grep -e '{params.feature}' |\
+            grep -e '{params.feature_variants}' |\
             convert2bed --input=gff --output=bed > {output.regions}
             """
         )
@@ -127,6 +141,7 @@ rule bwa_index_genome:
         """
 
 
+# Todo: add bwa mem options
 # bwa/samtools/sambamba: [-a bwtsw|is]
 # *********************************************************************
 rule bwa_map_reads:
@@ -193,20 +208,6 @@ rule mapping_qual_stats:
         )
 
 
-# # *********************************************************************
-# # bedops - convert .gff to .bed using bedops and filter to exome
-# rule gff_to_bed:
-#     input:
-#         gff=config["input"]["genome"]["gff"],
-#     output:
-#         bed=config["bed"]["gffToBed"],
-#     params:
-#         gffFilter="protein_coding_gene",
-#     shell:
-#         """
-#        convert2bed --input=gff --output=bed < {input.gff} | \
-#             grep -e {params.gffFilter} > {output.bed}
-#         """
 # # *********************************************************************
 # # bedtools - merge overlapping intervals
 # #  -s: merge features that are on the same strand
