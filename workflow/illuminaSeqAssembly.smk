@@ -172,7 +172,9 @@ rule bwa_map_reads:
                 {params.threads} \
                 {input.genomeIndex} \
                 {input.fastqR1} {input.fastqR2} |\
-            samblaster -M |\
+            samblaster -M \
+                --removeDups \
+                --addMateTags |\
             samtools view -S -b \
                 --targets-file {input.regions} \
                 --min-MQ {params.mapping_qual} \

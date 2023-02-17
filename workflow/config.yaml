@@ -50,7 +50,7 @@ bwa:
    dir: output/04_map_reads/
    index: output/04_map_reads/genomeIndex/genome
    mapping_qual: 60
-   exclude_flag: 4  # exclude unnmapped reads
+   exclude_flag: "0x104"  # exclude unnmapped and secondary alignments reads (i.e 0x4 + 0x100)
 
 
 
