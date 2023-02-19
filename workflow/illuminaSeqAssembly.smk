@@ -1,5 +1,6 @@
-# A Snakemake pipeline for variant calling from illumina sequences
-# *********************************************************************
+# #####################################################################
+#   A Snakemake pipeline for variant calling from illumina sequences
+# #####################################################################
 
 
 # dependencies
@@ -134,7 +135,12 @@ rule trim_fastq_files:
             """
 
 
-# bwa - generate bwa genome-index files ------
+# #####################################################################
+#                      BCFTOOLS VARIANT CALLING
+# # ###################################################################
+
+
+# bwa - generate bwa genome-index files
 # *********************************************************************
 rule bwa_index_genome:
     input:
@@ -147,7 +153,6 @@ rule bwa_index_genome:
         """
 
 
-# Todo: add bwa mem options
 # bwa/samtools/sambamba: [-a bwtsw|is]
 # *********************************************************************
 rule bwa_map_reads:
