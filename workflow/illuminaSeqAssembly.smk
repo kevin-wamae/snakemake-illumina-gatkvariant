@@ -10,8 +10,13 @@ configfile: "workflow/config.yaml"
 
 
 # global wild cards of sample and matepair list
+# - this assumes that all fastq files have the SampleName_R1.fastq.gz and SampleName_R2.fastq.gz format
+# - If not, they might have the SampleName_S1_L001_R1_001.fastq.gz and SampleName_S1_L001_R2_001.fastq.gz format
+# - In this case, rename the files running the following command in your terminal, at the top level of the project:
+# python3 workflow/rename_fastq_files.py
 (SAMPLES,) = glob_wildcards(config["input"]["fastq"] + "{sample}_R1.fastq.gz")
 
+# test output
 print(SAMPLES)
 
 
@@ -51,6 +56,9 @@ rule all:
         # ------------------------------------
         # bcftools_variant_calling
         expand(config["bcftools"]["dir"] + "{sample}.vcf.gz", sample=SAMPLES),
+        # ------------------------------------
+        # snpeff_annotate_vcf
+        expand(config["snpEff"]["dir"] + "{sample}.vcf.gz", sample=SAMPLES),
 
 
 # genome data - download genome data
@@ -160,12 +168,11 @@ rule bwa_map_reads:
         genome=rules.get_genome_data.output.genome,
         genome_index=rules.bwa_index_genome.output.genome_index,
         fastqR1=rules.trim_fastq_files.output.out1,
-        fastqR2=rules.trim_fastq_files.output.out1,
+        fastqR2=rules.trim_fastq_files.output.out2,
         regions=rules.get_genome_data.output.regions,
     output:
         bam=config["bwa"]["dir"] + "{sample}.bam",
         index=config["bwa"]["dir"] + "{sample}.bam.bai",
-        # bam_to_bed=config["bwa"]["dir"] + "{sample}.markdup.bam.bed",
     params:
         threads=config["extra"]["threads"],
         mapping_qual=config["bwa"]["mapping_qual"],
@@ -256,24 +263,26 @@ rule bcftools_variant_calling:
         """
 
 
-# # *********************************************************************
-# # snpEff - variant annotation and functional effect prediction
-# # *********************************************************************
-# rule snpeff_annotate_variants:
-#     input:
-#         rules.bcftools_variant_calling.output.vcf,
-#     output:
-#         vcf=config["snpEff"]["dir"] + "{sample}.vcf.gz",
-#     params:
-#         config=config["snpEff"]["config"],
-#         database=config["snpEff"]["database"],
-#     shell:
-#         """
-#         snpEff -no-downstream -no-intergenic -no-intron -no-upstream \
-#                -no-utr -hgvs1LetterAa -noLof -noShiftHgvs -noMotif \
-#                -no SPLICE_SITE_REGION -noInteraction -noStats  \
-#                -config {params.config} {params.database}  {input} | gzip > {output.vcf}
-#         """
+# *********************************************************************
+# snpEff - variant annotation and functional effect prediction
+# *********************************************************************
+rule snpeff_annotate_vcf:
+    input:
+        rules.bcftools_variant_calling.output.vcf,
+    output:
+        vcf=config["snpEff"]["dir"] + "{sample}.vcf.gz",
+    params:
+        config=config["snpEff"]["config"],
+        database=config["snpEff"]["database"],
+    shell:
+        """
+        snpEff -no-downstream -no-intergenic -no-intron -no-upstream \
+            -no-utr -hgvs1LetterAa -noLof -noShiftHgvs -noMotif \
+            -no SPLICE_SITE_REGION -noInteraction -noStats  \
+            -config {params.config} {params.database} {input} | gzip > {output.vcf}
+        """
+
+
 # # *********************************************************************
 # # SnpSift - extract vcf fields
 # # *********************************************************************
