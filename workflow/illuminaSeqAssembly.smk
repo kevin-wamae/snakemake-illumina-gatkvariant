@@ -59,6 +59,10 @@ rule all:
         # ------------------------------------
         # snpeff_annotate_vcf
         expand(config["snpEff"]["dir"] + "{sample}.vcf.gz", sample=SAMPLES),
+        # ------------------------------------
+        # snpsift_filter_vcf
+        expand(config["snpSift"]["dir"] + "{sample}.allele.txt", sample=SAMPLES),
+        expand(config["snpSift"]["dir"] + "{sample}.allele.freq.txt", sample=SAMPLES),
 
 
 # genome data - download genome data
@@ -283,45 +287,45 @@ rule snpeff_annotate_vcf:
         """
 
 
-# # *********************************************************************
-# # SnpSift - extract vcf fields
-# # *********************************************************************
-# rule snpsift_extract_variants:
-#     input:
-#         rules.snpeff_annotate_variants.output.vcf,
-#     output:
-#         allele_list=config["snpSift"]["dir"] + "{sample}.allele.txt",
-#         allele_freq=config["snpSift"]["dir"] + "{sample}.allele.freq.txt",
-#     run:
-#         shell(  # SnpSift - extract vcf fields
-#             """
-#                  SnpSift extractFields {input} \
-#                     CHROM POS REF ALT "ANN[*].ALLELE" "ANN[*].EFFECT" \
-#                     "ANN[*].GENEID" "ANN[*].HGVS_C" "ANN[*].HGVS_P" \
-#                     "ANN[*].CDS_POS" "ANN[*].AA_POS" "GEN[*].AD" > {output.allele_list}
-#                 """
-#         )
-#         shell(  # awk - compute allele frequencies from AD column of .vcf file
-#             """
-#             awk '
-#                 BEGIN {{ FS=OFS="\\t" }}
-#                 NR == 1 {{
-#                     allelFreq1 = "AF_REF"
-#                     allelFreq2 = "AF_ALT"
-#                 }}
-#                 NR > 1 {{
-#                     split($12,a,",")
-#                     sum = a[1] + a[2]
-#                     if ( sum ) {{
-#                         allelFreq1 = a[1] / sum
-#                         allelFreq2 = a[2] / sum
-#                     }}
-#                     else {{
-#                         allelFreq1 = 0
-#                         allelFreq2 = 0
-#                     }}
-#                 }}
-#                 {{ print $0, allelFreq1, allelFreq2 }}
-#             ' {output.allele_list} | sed -e 's/ANN\\[\\*\\]\\.\\|GEN\\[\\*\\]\\.//g' > {output.allele_freq}
-#             """
-#         )
+# *********************************************************************
+# SnpSift - extract vcf fields
+# *********************************************************************
+rule snpsift_filter_vcf:
+    input:
+        rules.snpeff_annotate_vcf.output.vcf,
+    output:
+        allele_list=config["snpSift"]["dir"] + "{sample}.allele.txt",
+        allele_freq=config["snpSift"]["dir"] + "{sample}.allele.freq.txt",
+    run:
+        shell(  # SnpSift - extract vcf fields
+            """
+            SnpSift extractFields {input} \
+                CHROM POS REF ALT "ANN[*].ALLELE" "ANN[*].EFFECT" \
+                "ANN[*].GENEID" "ANN[*].HGVS_C" "ANN[*].HGVS_P" \
+                "ANN[*].CDS_POS" "ANN[*].AA_POS" "GEN[*].AD" > {output.allele_list}
+            """
+        )
+        shell(  # awk - compute allele frequencies from AD column of .vcf file
+            """
+            awk '
+                BEGIN {{ FS=OFS="\\t" }}
+                NR == 1 {{
+                    allelFreq1 = "AF_REF"
+                    allelFreq2 = "AF_ALT"
+                }}
+                NR > 1 {{
+                    split($12,a,",")
+                    sum = a[1] + a[2]
+                    if ( sum ) {{
+                        allelFreq1 = a[1] / sum
+                        allelFreq2 = a[2] / sum
+                    }}
+                    else {{
+                        allelFreq1 = 0
+                        allelFreq2 = 0
+                    }}
+                }}
+                {{ print $0, allelFreq1, allelFreq2 }}
+            ' {output.allele_list} | sed -e 's/ANN\\[\\*\\]\\.\\|GEN\\[\\*\\]\\.//g' > {output.allele_freq}
+            """
+        )
