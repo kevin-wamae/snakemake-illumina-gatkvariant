@@ -10,12 +10,11 @@ extra:
 
 # fastq files, adapters and genome files
 input:
-   fastq: input/01_fastq/                                        # raw fastq files
-   adapters: input/02_adapters/NexteraPE-PE.fa                   # sequencing adapters
+   fastq: input/fastq/                                       # raw fastq files
    genome:
-      fasta: output/01_snpeff_database/genomes/P.falciparum.fa   # local copy of genome fasta file
-      gff: output/01_snpeff_database/P.falciparum/genes.gff      # local copy of genome gff file
-      regions: input/02_genome/genome.bed.gz                     # bed file with regions of interest
+      fasta: output/1_snpeff_database/genomes/P.falciparum.fa  # local copy of genome fasta file
+      gff: output/1_snpeff_database/P.falciparum/genes.gff     # local copy of genome gff file
+      regions: input/2_genome/genome.bed.gz                    # bed file with regions of interest
       url: https://plasmodb.org/common/downloads/release-51/Pfalciparum3D7/fasta/data/PlasmoDB-51_Pfalciparum3D7_Genome.fasta  # url to download genome fasta file
    
 
@@ -25,60 +24,60 @@ input:
 # ****************************************************************
 
 get_genome_data:
-   fasta: output/02_genome/genome.fa            # genome fasta file, copied from snpeff database
-   fasta_idx: output/02_genome/genome.fa.fai    # genome fasta index file
-   gff: output/02_genome/annotations.gff        # genome gff file, copied from snpeff database
-   bed: output/02_genome/annotations.bed        # genome bed file
-   loci: PF3D7_1133400\|PF3D7_1343700           # loci to extract from genome
-   feature_filter_genome: protein_coding_gene   # features to filter genome gff file, for read mapping
-   feature_filter_variants: CDS                 # features to filter gff file, for variant calling
-   regions: output/02_genome/regions.bed        # bed file with regions of interest, matching {feature_filter_variants}
+   fasta: output/2_genome/genome.fa            # genome fasta file, copied from snpeff database
+   fasta_idx: output/2_genome/genome.fa.fai    # genome fasta index file
+   gff: output/2_genome/annotations.gff        # genome gff file, copied from snpeff database
+   bed: output/2_genome/annotations.bed        # genome bed file
+   loci: PF3D7_1133400\|PF3D7_1343700          # loci to extract from genome
+   feature_filter_genome: protein_coding_gene  # features to filter genome gff file, for read mapping
+   feature_filter_variants: CDS                # features to filter gff file, for variant calling
+   regions: output/2_genome/regions.bed        # bed file with regions of interest, matching {feature_filter_variants}
 
 
 
 # trim_illumina_adapters - trim illumina adapters
 # ----------------------------------------------------------------
 fastp:
-   dir: output/03_fastq_trim/   # output directory
-   min_len: 191                 # minimum read length after trimming
+   dir: output/3_trimmed_fastq/  # output directory
+   min_len: 191                  # minimum read length after trimming
 
 
 
 # create_genome_index - generate index files for genome mapping
 # ----------------------------------------------------------------
 bwa:
-   dir: output/04_map_reads/                              # output directory
-   genome_index: output/04_map_reads/genomeIndex/genome   # genome index prefix
-   mapping_qual: 60                                       # minimum mapping quality
-   exclude_flag: "0x104"                                  # exclude unnmapped and secondary alignments reads (i.e 0x4 + 0x100)
+   dir: output/4_aligned_bam/                           # output directory
+   genome_index: output/4_aligned_bam/genomeIndex/genome  # genome index prefix
+   mapping_qual: 60                                     # minimum mapping quality
+   exclude_flag: "0x104"                                # exclude unnmapped and secondary alignments reads (i.e 0x4 + 0x100)
 
 
 
 # mapping_qual_stats - get mapping qual statistics
 # ----------------------------------------------------------------
 mapping_stats:                         
-   dir: output/05_map_quality_stats/  # output directory
+   dir: output/5_map_qual_stats/  # output directory
 
 
 
 # variant calling - call variants against reference genome
 # ----------------------------------------------------------------
 bcftools:
-   dir: output/06_variant_calling/  # output directory
-   min_base_qual: 20                # minimum base quality
+   dir: output/6_vcf_files/  # output directory
+   min_base_qual: 20         # minimum base quality
 
 
 
 # annotate_variants - annotate variants in vcf file
 # ----------------------------------------------------------------
 snpEff:
-   config: .snpEff.config               # snpEff config file
-   database: P.falciparum               # snpEff database name
-   dir: output/08_variants_annotated/   # output directory
+   config: .snpEff.config         # snpEff config file
+   database: P.falciparum         # snpEff database name
+   dir: output/7_vcfs_annotated/  # output directory
 
 
 
 # extract_variants - extract variants from vcf file
 # ----------------------------------------------------------------
 snpSift:
-   dir: output/08_variants_annotated/   # output directory
+   dir: output/8_extracted_variants/  # output directory

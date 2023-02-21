@@ -20,7 +20,7 @@ GENOME_GFF='gff/data/PlasmoDB-51_Pfalciparum3D7.gff'
 # variables for snpEff database
 #   - replace ORGANISM value  with the name of your organism
 # *****************************************************************
-DATADIR='output/01_snpeff_database'
+DATADIR='output/1_snpeff_database'
 ORGANISM='P.falciparum'
 
 

@@ -3,7 +3,7 @@ import os
 import glob
 
 # change directory to where the fastq files are
-os.chdir("input/01_fastq")
+os.chdir("input/fastq")
 
 # loop through all files in the directory
 for file in glob.glob("*.fastq.gz"):
