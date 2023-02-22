@@ -38,8 +38,9 @@ get_genome_data:
 # trim_illumina_adapters - trim illumina adapters
 # ----------------------------------------------------------------
 fastp:
-   dir: output/3_trimmed_fastq/  # output directory
-   min_len: 191                  # minimum read length after trimming
+   dir: output/3_trimmed_fastq/      # output directory
+   log: output/3_trimmed_fastq/log/  # log file
+   min_len: 150                      # minimum read length after trimming
 
 
 

@@ -16,6 +16,7 @@ configfile: "workflow/config.yaml"
 # python3 workflow/rename_fastq_files.py
 (SAMPLES,) = glob_wildcards(config["input"]["fastq"] + "{sample}_R1.fastq.gz")
 
+
 # test output
 print(SAMPLES)
 
@@ -28,8 +29,8 @@ rule all:
         # trim_fastq
         expand(config["fastp"]["dir"] + "{sample}_R1.fastq.gz", sample=SAMPLES),
         expand(config["fastp"]["dir"] + "{sample}_R2.fastq.gz", sample=SAMPLES),
-        expand(config["fastp"]["dir"] + "{sample}.json", sample=SAMPLES),
-        expand(config["fastp"]["dir"] + "{sample}.html", sample=SAMPLES),
+        expand(config["fastp"]["log"] + "{sample}.json", sample=SAMPLES),
+        expand(config["fastp"]["log"] + "{sample}.html", sample=SAMPLES),
         # ------------------------------------
         # get_genome_data
         config["get_genome_data"]["fasta"],
@@ -127,8 +128,8 @@ rule trim_fastq_files:
     output:
         out1=config["fastp"]["dir"] + "{sample}_R1.fastq.gz",
         out2=config["fastp"]["dir"] + "{sample}_R2.fastq.gz",
-        json=config["fastp"]["dir"] + "{sample}.json",
-        html=config["fastp"]["dir"] + "{sample}.html",
+        json=config["fastp"]["log"] + "{sample}.json",
+        html=config["fastp"]["log"] + "{sample}.html",
     params:
         threads=config["extra"]["threads"],
         min_len=config["fastp"]["min_len"],
