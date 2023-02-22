@@ -1,4 +1,4 @@
-01_fastq/*
-02_genome/*
-!01_fastq/file1_R1.fastq.gz
-!01_fastq/file1_R2.fastq.gz
+1_fastq/*
+2_genome/*
+!01_fastq/reads_R1.fastq.gz
+!01_fastq/reads_R2.fastq.gz
