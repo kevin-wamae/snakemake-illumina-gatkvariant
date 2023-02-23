@@ -27,6 +27,8 @@
   - R1=first mates
   - R2=second mates
 
+- This pipeline assumes that you have checked the quality of your reads using a tool such as [FastQC](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/). If you haven't, you can start with this earlier pipeline: [illuminaTrimWizard](https://github.com/kevin-wamae/illuminaTrimWizard)
+
 ---
 
 ### **Project dependencies:**
