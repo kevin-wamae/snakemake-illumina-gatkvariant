@@ -1,6 +1,18 @@
 # **A Snakemake pipeline for variant calling from illumina sequences**
 
----
+### **Table of contents**
+- [**A Snakemake pipeline for variant calling from illumina sequences**](#a-snakemake-pipeline-for-variant-calling-from-illumina-sequences)
+    - [**Table of contents**](#table-of-contents)
+    - [**Motivation**](#motivation)
+    - [**Project dependencies:**](#project-dependencies)
+      - [     **Package management**](#-package-management)
+      - [     **Workflow management**](#-workflow-management)
+      - [     **Bioinformatics tools (packages)**](#-bioinformatics-tools-packages)
+    - [**Where to start**](#where-to-start)
+    - [**Directory structure**](#directory-structure)
+    - [**Running the analysis**](#running-the-analysis)
+    - [**Expected output**](#expected-output)
+
 
 ### **Motivation**
 
