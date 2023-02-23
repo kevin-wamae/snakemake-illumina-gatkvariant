@@ -1,0 +1,17 @@
+name: illumina-variant-quest
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+  - anaconda
+  - r
+dependencies:
+  - snakemake>=7.22.0
+  - fastp=0.23.2
+  - bwa=0.7.17
+  - samtools=1.16.1
+  - samblaster=0.1.26
+  - bedops=2.4.41
+  - bcftools=1.16
+  - snpeff=5.1
+  - snpsift=5.1
