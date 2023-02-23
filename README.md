@@ -1,6 +1,18 @@
 # **A Snakemake pipeline for variant calling from illumina sequences**
 
----
+### **Table of contents**
+- [**A Snakemake pipeline for variant calling from illumina sequences**](#a-snakemake-pipeline-for-variant-calling-from-illumina-sequences)
+    - [**Table of contents**](#table-of-contents)
+    - [**Motivation**](#motivation)
+    - [**Project dependencies:**](#project-dependencies)
+      - [     **Package management**](#-package-management)
+      - [     **Workflow management**](#-workflow-management)
+      - [     **Bioinformatics tools (packages)**](#-bioinformatics-tools-packages)
+    - [**Where to start**](#where-to-start)
+    - [**Directory structure**](#directory-structure)
+    - [**Running the analysis**](#running-the-analysis)
+    - [**Expected output**](#expected-output)
+
 
 ### **Motivation**
 
@@ -27,6 +39,8 @@
   - R1=first mates
   - R2=second mates
 
+- This pipeline assumes that you have checked the quality of your reads using a tool such as [FastQC](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/). If you haven't, you can start with this earlier pipeline: [illuminaTrimWizard](https://github.com/kevin-wamae/illuminaTrimWizard)
+
 ---
 
 ### **Project dependencies:**
@@ -52,9 +66,9 @@
 
 - Install conda for your operating System: [Windows](https://docs.conda.io/projects/conda/en/latest/user-guide/install/windows.html), [MacOS](https://docs.conda.io/projects/conda/en/latest/user-guide/install/macos.html), [Linux](https://docs.conda.io/projects/conda/en/latest/user-guide/install/linux.html)
 - Clone this project using the following command:
-  - `git clone `
+  - `git clone https://github.com/kevin-wamae/illuminaVariantQuest.git`
 - Navigate into the cloned directory using the command below. This will be the root directory of the project:
-  - `cd `
+  - `cd illuminaVariantQuest`
 - **_Note: All subsequent commands should be run from the root directory of this project. However, users can modify the scripts to their liking_**
  
  ---
