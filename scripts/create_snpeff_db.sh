@@ -57,8 +57,12 @@ wget --continue \
 # ensure that the gene-names in cds.fa & protein.fa are identical
 # -----------------------------------------------------------------
 # 'snpEff build' will fail if the names don't match, e.g., we will
-# drop, the suffix '-p1' in protein.fa to match the names in cds.fa
-sed -i '' -e "s/1-p1/1/" $DATADIR/$ORGANISM/protein.fa
+# - drop, the suffix '-p1' in protein.fa to match the names in cds.fa
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    sed -i '' -e "s/1-p1/1/" $DATADIR/$ORGANISM/protein.fa
+else
+    sed -i -e "s/1-p1/1/" $DATADIR/$ORGANISM/protein.fa
+fi
 
 
 # download gff annotation files
