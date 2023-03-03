@@ -17,11 +17,7 @@ configfile: "workflow/config.yaml"
 (SAMPLES,) = glob_wildcards(config["input"]["fastq"] + "{sample}_R1.fastq.gz")
 
 
-# test output
-print(SAMPLES)
-
-
-# all output out
+# a list of all output files
 # *********************************************************************
 rule all:
     input:
@@ -253,7 +249,6 @@ rule bcftools_variant_calling:
             --threads {params.threads} \
             --annotate FORMAT/AD,FORMAT/ADF,FORMAT/ADR,FORMAT/SP,FORMAT/QS,INFO/AD,INFO/ADF,INFO/ADR \
             --fasta-ref {input.genome} \
-            --output-type z \
             {input.bam} |\
         bcftools call \
             --threads {params.threads} \
@@ -262,8 +257,10 @@ rule bcftools_variant_calling:
             --variants-only |\
         bcftools filter \
             --threads {params.threads} \
-            --soft-filter LowQual \
-            --include 'QUAL>20 || DP>100' \
+            --exclude 'QUAL<20' |\
+        bcftools view \
+            --threads {params.threads} \
+            --include 'DP>20' \
             --output-type z --output {output.vcf}
         """
 
@@ -303,7 +300,7 @@ rule snpsift_filter_vcf:
             SnpSift extractFields {input} \
                 CHROM POS REF ALT "ANN[*].ALLELE" "ANN[*].EFFECT" \
                 "ANN[*].GENEID" "ANN[*].HGVS_C" "ANN[*].HGVS_P" \
-                "ANN[*].CDS_POS" "ANN[*].AA_POS" "GEN[*].AD" > {output.allele_list}
+                "ANN[*].CDS_POS" "ANN[*].AA_POS" "GEN[*].GT" "GEN[*].AD" > {output.allele_list}
             """
         )
         shell(  # awk - compute allele frequencies from AD column of .vcf file
