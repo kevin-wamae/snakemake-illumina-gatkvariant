@@ -40,7 +40,8 @@ get_genome_data:
 fastp:
    dir: output/3_trimmed_fastq/      # output directory
    log: output/3_trimmed_fastq/log/  # log file
-   min_len: 150                      # minimum read length after trimming
+   min_len: 36                       # minimum read length after trimming
+   min_qual: 20                      # minimum base quality
 
 
 

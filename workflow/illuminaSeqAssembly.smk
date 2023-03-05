@@ -129,14 +129,15 @@ rule trim_fastq_files:
     params:
         threads=config["extra"]["threads"],
         min_len=config["fastp"]["min_len"],
+        min_qual=config["fastp"]["min_qual"],
     shell:
         """
         fastp \
             --thread {params.threads} \
             --detect_adapter_for_pe \
-            --qualified_quality_phred 20 \
-            --cut_tail --cut_tail_mean_quality 20 \
             --length_required {params.min_len} \
+            --qualified_quality_phred 20 \
+            --cut_tail --cut_tail_mean_quality {params.min_qual} \
             --in1 {input.in1} \
             --in2 {input.in2} \
             --out1 {output.out1} --out2 {output.out2} \
