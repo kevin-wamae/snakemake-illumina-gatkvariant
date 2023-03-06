@@ -24,9 +24,11 @@ rule all:
         # ------------------------------------
         # get_genome_data
         config["get_genome_data"]["fasta"],
-        # config["get_genome_data"]["fasta_idx"],
         config["get_genome_data"]["gff"],
         # config["get_genome_data"]["regions"],
+        # ------------------------------------
+        # samtools_index
+        config["samtools_index"]["fasta_idx"],
         # # ------------------------------------
         # # trim_fastq
         # expand(config["fastp"]["dir"] + "{sample}_R1.fastq.gz", sample=SAMPLES),
@@ -70,7 +72,6 @@ rule get_genome_data:
         gff=config["input"]["genome"]["gff"],
     output:
         genome=config["get_genome_data"]["fasta"],
-        # genome_index=config["get_genome_data"]["fasta_idx"],
         gff=config["get_genome_data"]["gff"],
         # bed=config["get_genome_data"]["bed"],
         # regions=config["get_genome_data"]["regions"],
@@ -84,11 +85,6 @@ rule get_genome_data:
             cp -f {input.genome} {output.genome}
             """
         )
-        # shell(  # faidx - generate fasta index file
-        #     """
-        #     samtools faidx {output.genome}
-        #     """
-        # )
         shell(  # cp - copy annotation file from snpeff database location
             """
             cp -f {input.gff} {output.gff}
@@ -113,6 +109,22 @@ rule get_genome_data:
         #     convert2bed --input=gff --output=bed > {output.regions}
         #     """
         # )
+
+
+# samtools index - index genome fasta file
+# *********************************************************************s
+rule samtools_index:
+    input:
+        rules.get_genome_data.output.genome,
+    output:
+        config["samtools_index"]["fasta_idx"],
+    log:
+        "genome.log",
+    params:
+        # optional params string
+        extra="",
+    wrapper:
+        "master/bio/samtools/faidx"
 
 
 
