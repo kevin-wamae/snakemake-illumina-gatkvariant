@@ -179,6 +179,10 @@ rule bwa_map_reads:
         threads=config["extra"]["threads"],
         mapping_qual=config["bwa"]["mapping_qual"],
         exclude_flag=config["bwa"]["exclude_flag"],
+        rg_id="{sample}",
+        rg_sm="{sample}",
+        rg_lb=config["bwa"]["read_group"]["library"],
+        rg_pl=config["bwa"]["read_group"]["platform"],
     run:
         shell(
             # bwa mem - map reads to reference genome
@@ -188,8 +192,10 @@ rule bwa_map_reads:
             #  - remove reads with flag 4 (unmapped)
             # samtools sort - sort bam file
             """
-            bwa mem -M -t \
-                {params.threads} \
+            bwa mem \
+                -M \
+                -t {params.threads} \
+                -R '@RG\\tID:{params.rg_id}\\tSM:{params.rg_sm}\\tLB:{params.rg_lb}\\tPL:{params.rg_pl}' \
                 {input.genome_index} \
                 {input.fastqR1} {input.fastqR2} |\
             samblaster -M \
