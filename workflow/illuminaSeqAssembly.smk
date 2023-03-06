@@ -29,6 +29,9 @@ rule all:
         # ------------------------------------
         # samtools_index
         config["samtools_index"]["fasta_idx"],
+        # ------------------------------------        
+        # bedops_gff2bed
+        config["bedops_gff2bed"]["bed"],
         # # ------------------------------------
         # # trim_fastq
         # expand(config["fastp"]["dir"] + "{sample}_R1.fastq.gz", sample=SAMPLES),
@@ -118,14 +121,26 @@ rule samtools_index:
         rules.get_genome_data.output.genome,
     output:
         config["samtools_index"]["fasta_idx"],
-    log:
-        "genome.log",
-    params:
-        # optional params string
-        extra="",
     wrapper:
         "master/bio/samtools/faidx"
 
+
+# bedops - convert genome annotation GFF to BED
+# *********************************************************************
+rule bedops_gff2bed:
+    input:
+        rules.get_genome_data.output.gff,
+    output:
+        config["bedops_gff2bed"]["bed"],
+    params:
+        feature=config["bedops_gff2bed"]["feature"],
+    conda:
+        config["conda_env"]["bedops"],
+    shell:
+        """
+        convert2bed --input=gff --output=bed < {input} | \
+            grep -e {params.feature} > {output}
+        """
 
 
 # # fastp - clip illumina adapters, paired end mode

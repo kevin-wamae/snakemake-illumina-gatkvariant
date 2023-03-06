@@ -8,7 +8,9 @@ extra:
 #                              INPUT
 # ****************************************************************
 
+
 # fastq files, adapters and genome files
+# ----------------------------------------------------------------
 input:
    fastq: input/fastq/                                       # raw fastq files
    genome:
@@ -19,25 +21,37 @@ input:
    
 
 
+# conda environment files
+conda_env:
+   bedops: env/bedops.yaml # bedops
 # ****************************************************************
 #                              OUTPUT
 # ****************************************************************
 
+
+# copy genomes files to output directory
+# ----------------------------------------------------------------
 get_genome_data:
    fasta: output/2_genome/genome.fa            # genome fasta file, copied from snpeff database
-   fasta_idx: output/2_genome/genome.fa.fai    # genome fasta index file
    gff: output/2_genome/annotations.gff        # genome gff file, copied from snpeff database
-   # bed: output/2_genome/annotations.bed        # genome bed file
-   # loci: PF3D7_1133400\|PF3D7_1343700          # loci to extract from genome
-   # feature_filter_genome: protein_coding_gene  # features to filter genome gff file, for read mapping
+   # loci: PF3D7_1133400\|PF3D7_1343700          # loci to extract from genome gff file, for variant calling
    # feature_filter_variants: CDS                # features to filter gff file, for variant calling
    # regions: output/2_genome/regions.bed        # bed file with regions of interest, matching {feature_filter_variants}
 
 
-
+# samtools_index - index genome fasta file
+# ----------------------------------------------------------------
 samtools_index:
    fasta_idx: output/2_genome/genome.fa.fai    # genome fasta index file
 
+
+
+# bedtools - convert genome annotation GFF to BED
+# ----------------------------------------------------------------
+bedops_gff2bed:
+   bed: output/2_genome/annotations.bed        # genome bed file
+   feature: protein_coding_gene                # features to filter genome gff file, for read mapping
+   conda_env: env/bedops.yaml                  # conda environment file
 
 
 # # trim_illumina_adapters - trim illumina adapters
