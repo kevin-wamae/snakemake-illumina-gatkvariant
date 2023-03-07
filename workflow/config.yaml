@@ -34,9 +34,7 @@ conda_env:
 get_genome_data:
    fasta: output/2_genome/genome.fa            # genome fasta file, copied from snpeff database
    gff: output/2_genome/annotations.gff        # genome gff file, copied from snpeff database
-   # loci: PF3D7_1133400\|PF3D7_1343700          # loci to extract from genome gff file, for variant calling
-   # feature_filter_variants: CDS                # features to filter gff file, for variant calling
-   # regions: output/2_genome/regions.bed        # bed file with regions of interest, matching {feature_filter_variants}
+
 
 
 # samtools_index - index genome fasta file
@@ -54,14 +52,18 @@ bedops_gff2bed:
    conda_env: env/bedops.yaml                  # conda environment file
 
 
-# # trim_illumina_adapters - trim illumina adapters
-# # ----------------------------------------------------------------
-# fastp:
-#    dir: output/3_trimmed_fastq/      # output directory
-#    log: output/3_trimmed_fastq/log/  # log file
-#    min_len: 36                       # minimum read length after trimming
-#    min_qual: 20                      # minimum base quality
 
+# trimmomatic - clip illumina adapters, paired end mode
+# ----------------------------------------------------------------
+trimmomatic:
+   dir: output/3_trimmed_fastq/  # output directory
+   trimmer:                      # See trimmomatic manual for adding additional options, e.g. for adapter trimming.
+      - "LEADING:3"
+      - "TRAILING:3"
+      - "SLIDINGWINDOW:4:15"
+      - "MINLEN:36"
+   extra:                        # extra options to pass to trimmomatic
+      - "-threads 4"
 
 
 # # create_genome_index - generate index files for genome mapping

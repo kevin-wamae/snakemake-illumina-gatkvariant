@@ -32,12 +32,18 @@ rule all:
         # ------------------------------------        
         # bedops_gff2bed
         config["bedops_gff2bed"]["bed"],
-        # # ------------------------------------
-        # # trim_fastq
-        # expand(config["fastp"]["dir"] + "{sample}_R1.fastq.gz", sample=SAMPLES),
-        # expand(config["fastp"]["dir"] + "{sample}_R2.fastq.gz", sample=SAMPLES),
-        # expand(config["fastp"]["log"] + "{sample}.json", sample=SAMPLES),
-        # expand(config["fastp"]["log"] + "{sample}.html", sample=SAMPLES),
+        # ------------------------------------
+        # trimmomaticS,
+        expand(config["trimmomatic"]["dir"] + "{sample}_R1.fastq.gz", sample=SAMPLES),
+        expand(config["trimmomatic"]["dir"] + "{sample}_R2.fastq.gz", sample=SAMPLES),
+        expand(
+            config["trimmomatic"]["dir"] + "{sample}_R1.unpaired.fastq.gz",
+            sample=SAMPLES,
+        ),
+        expand(
+            config["trimmomatic"]["dir"] + "{sample}_R2.unpaired.fastq.gz",
+            sample=SAMPLES,
+        ),
         # # ------------------------------------
         # # bwa_index_genome
         # config["bwa"]["genome_index"],
@@ -76,12 +82,6 @@ rule get_genome_data:
     output:
         genome=config["get_genome_data"]["fasta"],
         gff=config["get_genome_data"]["gff"],
-        # bed=config["get_genome_data"]["bed"],
-        # regions=config["get_genome_data"]["regions"],
-    params:
-        # loci=config["get_genome_data"]["loci"],
-        # feature_genome=config["get_genome_data"]["feature_filter_genome"],
-        # feature_variants=config["get_genome_data"]["feature_filter_variants"],
     run:
         shell(  # cp - copy genome fasta file from snpeff database location
             """
@@ -93,25 +93,6 @@ rule get_genome_data:
             cp -f {input.gff} {output.gff}
             """
         )
-        # shell(
-        #     # bedops - convert genome annotation GFF to BED
-        #     #   - compared to the BED file containing the regions of interest (below), we will select
-        #     #     entire protein coding regions of the genome
-        #     """
-        #     convert2bed --input=gff --output=bed < {input.gff} | \
-        #         grep -e {params.feature_genome} > {output.bed}
-        #     """
-        # )
-        # shell(
-        #     # grep and bedops - extract regions of interest, here we extract AMA1 and K13 coding regions
-        #     #   - compared to the BED file containing the protein coding regions (above), we will only
-        #     #     select regions within the coding regions of the genome
-        #     """
-        #     grep {output.gff} -e '{params.loci}' |\
-        #     grep -e '{params.feature_variants}' |\
-        #     convert2bed --input=gff --output=bed > {output.regions}
-        #     """
-        # )
 
 
 # samtools index - index genome fasta file
@@ -135,7 +116,7 @@ rule bedops_gff2bed:
     params:
         feature=config["bedops_gff2bed"]["feature"],
     conda:
-        config["conda_env"]["bedops"],
+        config["conda_env"]["bedops"]
     shell:
         """
         convert2bed --input=gff --output=bed < {input} | \
@@ -143,34 +124,24 @@ rule bedops_gff2bed:
         """
 
 
-# # fastp - clip illumina adapters, paired end mode
-# # *********************************************************************
-# rule trim_fastq_files:
-#     input:
-#         in1=config["input"]["fastq"] + "{sample}_R1.fastq.gz",
-#         in2=config["input"]["fastq"] + "{sample}_R2.fastq.gz",
-#     output:
-#         out1=config["fastp"]["dir"] + "{sample}_R1.fastq.gz",
-#         out2=config["fastp"]["dir"] + "{sample}_R2.fastq.gz",
-#         json=config["fastp"]["log"] + "{sample}.json",
-#         html=config["fastp"]["log"] + "{sample}.html",
-#     params:
-#         threads=config["extra"]["threads"],
-#         min_len=config["fastp"]["min_len"],
-#         min_qual=config["fastp"]["min_qual"],
-#     shell:
-#         """
-#         fastp \
-#             --thread {params.threads} \
-#             --detect_adapter_for_pe \
-#             --length_required {params.min_len} \
-#             --qualified_quality_phred 20 \
-#             --cut_tail --cut_tail_mean_quality {params.min_qual} \
-#             --in1 {input.in1} \
-#             --in2 {input.in2} \
-#             --out1 {output.out1} --out2 {output.out2} \
-#             --json {output.json} --html {output.html}
-#             """
+# trimmomatic - clip illumina adapters, paired end mode
+# *********************************************************************
+rule trimmomatic:
+    input:
+        r1=config["input"]["fastq"] + "{sample}_R1.fastq.gz",
+        r2=config["input"]["fastq"] + "{sample}_R2.fastq.gz",
+    output:
+        r1=config["trimmomatic"]["dir"] + "{sample}_R1.fastq.gz",
+        r2=config["trimmomatic"]["dir"] + "{sample}_R2.fastq.gz",
+        r1_unpaired=config["trimmomatic"]["dir"] + "{sample}_R1.unpaired.fastq.gz",
+        r2_unpaired=config["trimmomatic"]["dir"] + "{sample}_R2.unpaired.fastq.gz",
+    params:
+        trimmer=config["trimmomatic"]["trimmer"],
+        extra=config["trimmomatic"]["extra"],
+    log:
+        config["trimmomatic"]["dir"] + "log/{sample}.log",
+    wrapper:
+        "master/bio/trimmomatic/pe"
 
 
 # # #####################################################################
@@ -189,8 +160,6 @@ rule bedops_gff2bed:
 #         """
 #         bwa index -p {output.genome_index} {input.genome}
 #         """
-
-
 # # bwa/samtools/sambamba: [-a bwtsw|is]
 # # *********************************************************************
 # rule bwa_map_reads:
