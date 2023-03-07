@@ -45,7 +45,7 @@ rule all:
             sample=SAMPLES,
         ),
         # ------------------------------------
-        # bwa_index_genome
+        # bwa_index
         multiext(
             config["get_genome_data"]["dir_fasta"] + "genome",
             ".amb",
@@ -54,10 +54,9 @@ rule all:
             ".pac",
             ".sa",
         ),
-        # # ------------------------------------
-        # # bwa_map_reads
-        # expand(config["bwa"]["dir"] + "{sample}.bam", sample=SAMPLES),
-        # expand(config["bwa"]["dir"] + "{sample}.bam.bai", sample=SAMPLES),
+        # ------------------------------------
+        # bwa_mem
+        expand(config["bwa"]["dir"] + "{sample}.sam", sample=SAMPLES),
         # # ------------------------------------
         # # samtools_mapping_stats
         # expand(
@@ -171,6 +170,27 @@ rule bwa_index:
         algorithm="bwtsw",
     wrapper:
         "master/bio/bwa/index"
+
+
+# bwa - map reads to genome
+# *********************************************************************
+rule bwa_mem:
+    input:
+        reads=[
+            rules.trimmomatic.output.r1,
+            rules.trimmomatic.output.r2,
+        ],
+        idx=rules.bwa_index.output.idx,
+    output:
+        config["bwa"]["dir"] + "{sample}.sam",
+    log:
+        config["bwa"]["log"] + "{sample}.log",
+    params:
+        extra=r"-R '@RG\tID:{sample}\tSM:{sample}'",
+        sorting="none",
+    threads: config["threads"]
+    wrapper:
+        "master/bio/bwa/mem"
 
 
 # # bwa/samtools/sambamba: [-a bwtsw|is]
