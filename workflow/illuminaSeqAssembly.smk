@@ -44,9 +44,16 @@ rule all:
             config["trimmomatic"]["dir"] + "{sample}_R2.unpaired.fastq.gz",
             sample=SAMPLES,
         ),
-        # # ------------------------------------
-        # # bwa_index_genome
-        # config["bwa"]["genome_index"],
+        # ------------------------------------
+        # bwa_index_genome
+        multiext(
+            config["get_genome_data"]["dir"] + "genome",
+            ".amb",
+            ".ann",
+            ".bwt",
+            ".pac",
+            ".sa",
+        ),
         # # ------------------------------------
         # # bwa_map_reads
         # expand(config["bwa"]["dir"] + "{sample}.bam", sample=SAMPLES),
@@ -144,22 +151,28 @@ rule trimmomatic:
         "master/bio/trimmomatic/pe"
 
 
-# # #####################################################################
-# #                      BCFTOOLS VARIANT CALLING
-# # # ###################################################################
+# bwa - generate bwa genome-index files
+# *********************************************************************
+rule bwa_index:
+    input:
+        genome=rules.get_genome_data.output.genome,
+    output:
+        idx=multiext(
+            config["get_genome_data"]["dir"] + "genome",
+            ".amb",
+            ".ann",
+            ".bwt",
+            ".pac",
+            ".sa",
+        ),
+    log:
+        config["get_genome_data"]["dir"] + "genome.bwa.index.log",
+    params:
+        algorithm="bwtsw",
+    wrapper:
+        "master/bio/bwa/index"
 
 
-# # bwa - generate bwa genome-index files
-# # *********************************************************************
-# rule bwa_index_genome:
-#     input:
-#         genome=rules.get_genome_data.output.genome,
-#     output:
-#         genome_index=touch(config["bwa"]["genome_index"]),
-#     shell:
-#         """
-#         bwa index -p {output.genome_index} {input.genome}
-#         """
 # # bwa/samtools/sambamba: [-a bwtsw|is]
 # # *********************************************************************
 # rule bwa_map_reads:

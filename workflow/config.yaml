@@ -32,8 +32,9 @@ conda_env:
 # copy genomes files to output directory
 # ----------------------------------------------------------------
 get_genome_data:
-   fasta: output/2_genome/genome.fa            # genome fasta file, copied from snpeff database
-   gff: output/2_genome/annotations.gff        # genome gff file, copied from snpeff database
+   dir: output/2_genome/                 # output directory
+   fasta: output/2_genome/genome.fa      # genome fasta file, copied from snpeff database
+   gff: output/2_genome/annotations.gff  # genome gff file, copied from snpeff database
 
 
 
