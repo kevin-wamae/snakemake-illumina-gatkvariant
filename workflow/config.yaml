@@ -12,11 +12,11 @@ extra:
 # fastq files, adapters and genome files
 # ----------------------------------------------------------------
 input:
-   fastq: input/fastq/                                       # raw fastq files
+   fastq: input/fastq/                                          # raw fastq files
    genome:
-      fasta: output/1_snpeff_database/genomes/P.falciparum.fa  # local copy of genome fasta file
-      gff: output/1_snpeff_database/P.falciparum/genes.gff     # local copy of genome gff file
-      regions: input/2_genome/genome.bed.gz                    # bed file with regions of interest
+      fasta: output/1_snpeff_database/genomes/P.falciparum.fa   # local copy of genome fasta file
+      gff: output/1_snpeff_database/P.falciparum/genes.gff      # local copy of genome gff file
+      regions: input/2_genome_reference/genome.bed.gz           # bed file with regions of interest
       url: https://plasmodb.org/common/downloads/release-51/Pfalciparum3D7/fasta/data/PlasmoDB-51_Pfalciparum3D7_Genome.fasta  # url to download genome fasta file
    
 
@@ -32,25 +32,25 @@ conda_env:
 # copy genomes files to output directory
 # ----------------------------------------------------------------
 get_genome_data:
-   dir: output/2_genome/                 # output directory
-   fasta: output/2_genome/genome.fa      # genome fasta file, copied from snpeff database
-   gff: output/2_genome/annotations.gff  # genome gff file, copied from snpeff database
+   dir_fasta: output/2_genome_reference/fasta/       # output directory
+   fasta: output/2_genome_reference/fasta/genome.fa  # genome fasta file, copied from snpeff database
+   gff: output/2_genome_reference/gff/genome.gff     # genome gff file, copied from snpeff database
 
 
 
 # samtools_index - index genome fasta file
 # ----------------------------------------------------------------
 samtools_index:
-   fasta_idx: output/2_genome/genome.fa.fai    # genome fasta index file
+   fasta_idx: output/2_genome_reference/fasta/genome.fa.fai  # genome fasta index file
 
 
 
-# bedtools - convert genome annotation GFF to BED
+# bedtools - convert genome GFF to BED
 # ----------------------------------------------------------------
 bedops_gff2bed:
-   bed: output/2_genome/annotations.bed        # genome bed file
-   feature: protein_coding_gene                # features to filter genome gff file, for read mapping
-   conda_env: env/bedops.yaml                  # conda environment file
+   bed: output/2_genome_reference/bed/genome.bed  # genome bed file
+   feature: protein_coding_gene                   # features to filter genome gff file, for read mapping
+   conda_env: env/bedops.yaml                     # conda environment file
 
 
 

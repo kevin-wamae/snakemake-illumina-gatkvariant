@@ -47,7 +47,7 @@ rule all:
         # ------------------------------------
         # bwa_index_genome
         multiext(
-            config["get_genome_data"]["dir"] + "genome",
+            config["get_genome_data"]["dir_fasta"] + "genome",
             ".amb",
             ".ann",
             ".bwt",
@@ -113,7 +113,7 @@ rule samtools_index:
         "master/bio/samtools/faidx"
 
 
-# bedops - convert genome annotation GFF to BED
+# bedops - convert genome GFF to BED
 # *********************************************************************
 rule bedops_gff2bed:
     input:
@@ -151,14 +151,14 @@ rule trimmomatic:
         "master/bio/trimmomatic/pe"
 
 
-# bwa - generate bwa genome-index files
+# bwa - generate bwa genome-index files for mapping
 # *********************************************************************
 rule bwa_index:
     input:
         genome=rules.get_genome_data.output.genome,
     output:
         idx=multiext(
-            config["get_genome_data"]["dir"] + "genome",
+            config["get_genome_data"]["dir_fasta"] + "genome",
             ".amb",
             ".ann",
             ".bwt",
@@ -166,7 +166,7 @@ rule bwa_index:
             ".sa",
         ),
     log:
-        config["get_genome_data"]["dir"] + "genome.bwa.index.log",
+        config["get_genome_data"]["dir_fasta"] + "genome.bwa.index.log",
     params:
         algorithm="bwtsw",
     wrapper:
