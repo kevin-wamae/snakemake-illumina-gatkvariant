@@ -49,7 +49,7 @@ rule all:
         config["bwa"]["index"],
         # ------------------------------------
         # bwa_mem
-        expand(config["bwa"]["dir"] + "{sample}.sam", sample=SAMPLES),
+        expand(config["bwa"]["dir"] + "{sample}.bam", sample=SAMPLES),
         # # ------------------------------------
         # # gatk_samtobam
         # expand(config["gatk"]["dir_clean_sam"] + "{sample}.bam", sample=SAMPLES),
@@ -171,12 +171,13 @@ rule bwa_mem:
         ],
         idx=rules.bwa_index.output,
     output:
-        config["bwa"]["dir"] + "{sample}.sam",
+        config["bwa"]["dir"] + "{sample}.bam",
     log:
         config["bwa"]["log"] + "{sample}.log",
     params:
         extra=r"-R '@RG\tID:{sample}\tSM:{sample}'",
         sorting="none",
+        sort_extra="",  # Extra args for samtools/picard.
     threads: config["threads"]
     wrapper:
         "master/bio/bwa/mem"

@@ -3,9 +3,8 @@
 # ****************************************************************
 # conda environment files
 conda_env:
-   bedops: env/bedops.yaml       # bedops
-   bwa: env/bwa.yaml             # bwa
-   map_reads: env/map_reads.yaml # gatk
+   bedops: env/bedops.yaml  # bedops
+   gatk: env/gatk.yaml      # gatk
 
 # number of threads to use, whenever possible
 threads: 4  
