@@ -115,49 +115,7 @@ samtools_view:
    core: input/bed/Pf3D7_core_genome.bed       # bed file with core genome regions
 
 
-gatk_coverage:
-   dir: output/4_mapped_reads/6_gatk_depth/      # output directory
-
-
-
-# # create_genome_index - generate index files for genome mapping
-# # ----------------------------------------------------------------
-# bwa:
-#    dir: output/4_aligned_bam/                             # output directory
-#    read_group:
-#       library: 1                                          # read group library
-#       platform: illumina                                  # read group platform
-#    genome_index: output/4_aligned_bam/genomeIndex/genome  # genome index prefix
-#    mapping_qual: 60                                       # minimum mapping quality
-#    exclude_flag: "0x104"                                  # exclude unnmapped and secondary alignments reads (i.e 0x4 + 0x100)
-
-
-
-# # mapping_qual_stats - get mapping qual statistics
-# # ----------------------------------------------------------------
-# mapping_stats:                         
-#    dir: output/5_map_qual_stats/  # output directory
-
-
-
-# # variant calling - call variants against reference genome
-# # ----------------------------------------------------------------
-# bcftools:
-#    dir: output/6_vcf_files/  # output directory
-#    min_base_qual: 20         # minimum base quality
-
-
-
-# # annotate_variants - annotate variants in vcf file
-# # ----------------------------------------------------------------
-# snpEff:
-#    config: .snpEff.config         # snpEff config file
-#    database: P.falciparum         # snpEff database name
-#    dir: output/7_vcfs_annotated/  # output directory
-
-
-
-# # extract_variants - extract variants from vcf file
-# # ----------------------------------------------------------------
-# snpSift:
-#    dir: output/8_extracted_variants/  # output directory
+# mapping_qual_stats - get mapping qual statistics
+# ----------------------------------------------------------------
+samtools_stats:                         
+   dir: output/4_mapped_reads/6_map_qual_stats/  # output directory

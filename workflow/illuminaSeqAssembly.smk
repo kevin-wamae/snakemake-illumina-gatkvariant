@@ -70,7 +70,15 @@ rule all:
         expand(config["samtools_view"]["dir"] + "{sample}.bam", sample=SAMPLES),
         expand(config["samtools_view"]["dir"] + "{sample}.bam.bai", sample=SAMPLES),
         # ------------------------------------
-        expand(config["gatk_coverage"]["dir"] + "{sample}", sample=SAMPLES),
+        # samtools_idxstats / samtools_flagstats
+        expand(
+            config["samtools_stats"]["dir"] + "{sample}.bam.idxstats.txt",
+            sample=SAMPLES,
+        ),
+        expand(
+            config["samtools_stats"]["dir"] + "{sample}.bam.flagstat.txt",
+            sample=SAMPLES,
+        ),
         # # ------------------------------------
         # # samtools_mapping_stats
         # expand(
@@ -311,187 +319,31 @@ rule samtools_view:
         """
 
 
-# gatk - DepthOfCoverage (calculate coverage across genomic regions)
+# samtools - idxstats (get mapping-quality statistics from BAM file)
 # *********************************************************************
-rule gatk_depth_of_coverage:
+rule samtools_idxstats:
     input:
-        bam=rules.samtools_view.output.bam,
-        genome=rules.get_genome_data.output.genome,
-        intervals=config["samtools_view"]["core"],
+        rules.samtools_view.output.bam,
     output:
-        out_basename=config["gatk_coverage"]["dir"] + "{sample}",
+        config["samtools_stats"]["dir"] + "{sample}.bam.idxstats.txt",
     conda:
-        config["conda_env"]["gatk"]
+        config["conda_env"]["samtools"]
     shell:
         """
-        gatk DepthOfCoverage \
-            --input {input.bam} \
-            --intervals {input.intervals} \
-            --reference {input.genome} \
-            --output {output.out_basename}
+        samtools idxstats {input} > {output}
         """
 
 
-# # bwa/samtools/sambamba: [-a bwtsw|is]
-# # *********************************************************************
-# rule bwa_map_reads:
-#     input:
-#         genome=rules.get_genome_data.output.genome,
-#         genome_index=rules.bwa_index_genome.output.genome_index,
-#         fastqR1=rules.trim_fastq_files.output.out1,
-#         fastqR2=rules.trim_fastq_files.output.out2,
-#         regions=rules.get_genome_data.output.regions,
-#     output:
-#         bam=config["bwa"]["dir"] + "{sample}.bam",
-#         index=config["bwa"]["dir"] + "{sample}.bam.bai",
-#     params:
-#         threads=config["extra"]["threads"],
-#         mapping_qual=config["bwa"]["mapping_qual"],
-#         exclude_flag=config["bwa"]["exclude_flag"],
-#         rg_id="{sample}",
-#         rg_sm="{sample}",
-#         rg_lb=config["bwa"]["read_group"]["library"],
-#         rg_pl=config["bwa"]["read_group"]["platform"],
-#     run:
-#         shell(
-#             # bwa mem - map reads to reference genome
-#             # samblaster - mark duplicates
-#             # samtools view - convert sam to bam
-#             #  - remove reads with mapping quality < 60
-#             #  - remove reads with flag 4 (unmapped)
-#             # samtools sort - sort bam file
-#             """
-#             bwa mem \
-#                 -M \
-#                 -t {params.threads} \
-#                 -R '@RG\\tID:{params.rg_id}\\tSM:{params.rg_sm}\\tLB:{params.rg_lb}\\tPL:{params.rg_pl}' \
-#                 {input.genome_index} \
-#                 {input.fastqR1} {input.fastqR2} |\
-#             samblaster -M \
-#                 --removeDups \
-#                 --addMateTags |\
-#             samtools view -S -b \
-#                 --targets-file {input.regions} \
-#                 --min-MQ {params.mapping_qual} \
-#                 --exclude-flags {params.exclude_flag} |\
-#             samtools sort -o {output.bam}
-#             """
-#         )
-#         shell(  # samtools index - index bam file for downstream analysis
-#             """
-#             samtools index {output.bam} {output.index}
-#             """
-#         )
-# # get mapping-quality statistics from BAM file
-# # *********************************************************************
-# rule samtools_mapping_stats:
-#     input:
-#         bam=rules.bwa_map_reads.output.bam,
-#     output:
-#         idxstats=config["mapping_stats"]["dir"] + "{sample}.bam.idxstats.txt",
-#         flagstats=config["mapping_stats"]["dir"] + "{sample}.bam.flagstats.txt",
-#     run:
-#         shell(  # samtools idxstats - counts for each of 13 categories based primarily on bit flags in the FLAG field
-#             """
-#             samtools idxstats {input.bam} > {output.idxstats}
-#             """
-#         )
-#         shell(  # samtools flagstats - stats for the bam index file
-#             """
-#             samtools flagstats {input.bam} --output-fmt tsv > {output.flagstats}
-#             """
-#         )
-# # *********************************************************************
-# # bcftools - variant calling
-# #   - bcftools mpileup - generates genotype likelihoods at each genomic
-# #     position with coverage.
-# #   - bcftools call - makes the actual calls
-# #   - bcftools filter - drop variants with QUAL<=20 and Depth of Coverage
-# rule bcftools_variant_calling:
-#     input:
-#         genome=rules.get_genome_data.output.genome,
-#         bam=rules.bwa_map_reads.output.bam,
-#     output:
-#         vcf=config["bcftools"]["dir"] + "{sample}.vcf.gz",
-#     params:
-#         threads=config["extra"]["threads"],
-#     shell:
-#         """
-#         bcftools mpileup \
-#             --threads {params.threads} \
-#             --annotate FORMAT/AD,FORMAT/ADF,FORMAT/ADR,FORMAT/SP,FORMAT/QS,INFO/AD,INFO/ADF,INFO/ADR \
-#             --fasta-ref {input.genome} \
-#             {input.bam} |\
-#         bcftools call \
-#             --threads {params.threads} \
-#             --skip-variants indels \
-#             --multiallelic-caller \
-#             --variants-only |\
-#         bcftools filter \
-#             --threads {params.threads} \
-#             --exclude 'QUAL<20' |\
-#         bcftools view \
-#             --threads {params.threads} \
-#             --include 'DP>20' \
-#             --output-type z --output {output.vcf}
-#         """
-# # *********************************************************************
-# # snpEff - variant annotation and functional effect prediction
-# # *********************************************************************
-# rule snpeff_annotate_vcf:
-#     input:
-#         rules.bcftools_variant_calling.output.vcf,
-#     output:
-#         vcf=config["snpEff"]["dir"] + "{sample}.vcf.gz",
-#     params:
-#         config=config["snpEff"]["config"],
-#         database=config["snpEff"]["database"],
-#     shell:
-#         """
-#         snpEff -no-downstream -no-intergenic -no-intron -no-upstream \
-#             -no-utr -hgvs1LetterAa -noLof -noShiftHgvs -noMotif \
-#             -no SPLICE_SITE_REGION -noInteraction -noStats  \
-#             -config {params.config} {params.database} {input} | gzip > {output.vcf}
-#         """
-# # *********************************************************************
-# # SnpSift - extract vcf fields
-# # *********************************************************************
-# rule snpsift_filter_vcf:
-#     input:
-#         rules.snpeff_annotate_vcf.output.vcf,
-#     output:
-#         allele_list=config["snpSift"]["dir"] + "{sample}.allele.txt",
-#         allele_freq=config["snpSift"]["dir"] + "{sample}.allele.freq.txt",
-#     run:
-#         shell(  # SnpSift - extract vcf fields
-#             """
-#             SnpSift extractFields {input} \
-#                 CHROM POS REF ALT "ANN[*].ALLELE" "ANN[*].EFFECT" \
-#                 "ANN[*].GENEID" "ANN[*].HGVS_C" "ANN[*].HGVS_P" \
-#                 "ANN[*].CDS_POS" "ANN[*].AA_POS" "GEN[*].GT" "GEN[*].AD" > {output.allele_list}
-#             """
-#         )
-#         shell(  # awk - compute allele frequencies from AD column of .vcf file
-#             """
-#             awk '
-#                 BEGIN {{ FS=OFS="\\t" }}
-#                 NR == 1 {{
-#                     allelFreq1 = "AF_REF"
-#                     allelFreq2 = "AF_ALT"
-#                 }}
-#                 NR > 1 {{
-#                     split($12,a,",")
-#                     sum = a[1] + a[2]
-#                     if ( sum ) {{
-#                         allelFreq1 = a[1] / sum
-#                         allelFreq2 = a[2] / sum
-#                     }}
-#                     else {{
-#                         allelFreq1 = 0
-#                         allelFreq2 = 0
-#                     }}
-#                 }}
-#                 {{ print $0, allelFreq1, allelFreq2 }}
-#             ' {output.allele_list} | sed -e 's/ANN\\[\\*\\]\\.\\|GEN\\[\\*\\]\\.//g' > {output.allele_freq}
-#             """
-#         )
+# samtools - flagstats (get mapping-quality statistics from BAM file)
+# *********************************************************************
+rule samtools_flagstat:
+    input:
+        rules.samtools_view.output.bam,
+    output:
+        config["samtools_stats"]["dir"] + "{sample}.bam.flagstat.txt",
+    conda:
+        config["conda_env"]["samtools"]
+    shell:
+        """
+        samtools flagstat {input} > {output}
+        """
