@@ -25,6 +25,9 @@ rule all:
         # get_genome_data
         config["get_genome_data"]["fasta"],
         config["get_genome_data"]["gff"],
+        # ------------------------------------
+        # genome_dict
+        config["get_genome_data"]["dict"],
         # config["get_genome_data"]["regions"],
         # ------------------------------------
         # samtools_index
@@ -56,6 +59,9 @@ rule all:
         # ------------------------------------
         # gatk_sort
         expand(config["gatk_sort"]["dir"] + "{sample}.bam", sample=SAMPLES),
+        # # ------------------------------------
+        # # gatk_markdup
+        # expand(config["gatk_markdup"]["dir"] + "{sample}.bam", sample=SAMPLES),
         # # ------------------------------------
         # # samtools_mapping_stats
         # expand(
@@ -98,6 +104,23 @@ rule get_genome_data:
             cp -f {input.gff} {output.gff}
             """
         )
+
+
+# genome data - download genome data
+# *********************************************************************
+rule gatk_genome_dict:
+    input:
+        genome=rules.get_genome_data.output.genome,
+    output:
+        genome_dict=config["get_genome_data"]["dict"],
+    conda:
+        config["conda_env"]["gatk"]
+    shell:
+        """
+        gatk CreateSequenceDictionary \
+        --REFERENCE {input.genome} \
+        --OUTPUT {output.genome_dict}
+        """
 
 
 # samtools index - index genome fasta file
