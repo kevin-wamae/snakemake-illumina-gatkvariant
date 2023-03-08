@@ -50,9 +50,9 @@ rule all:
         # ------------------------------------
         # bwa_mem
         expand(config["bwa"]["dir"] + "{sample}.bam", sample=SAMPLES),
-        # # ------------------------------------
-        # # gatk_samtobam
-        # expand(config["gatk"]["dir_clean_sam"] + "{sample}.bam", sample=SAMPLES),
+        # ------------------------------------
+        # gatk_clean_sam
+        expand(config["gatk_clean"]["dir"] + "{sample}.bam", sample=SAMPLES),
         # # ------------------------------------
         # # samtools_mapping_stats
         # expand(
@@ -183,20 +183,30 @@ rule bwa_mem:
         "master/bio/bwa/mem"
 
 
-# # gatk - clean sam file (remove artifacts in SAM/BAM files)
-# # *********************************************************************
-# rule gatk_samtobam:
-#     input:
-#         ref=config["get_genome_data"]["dir_fasta"],
-#         sam=rules.bwa_mem.output,
-#     output:
-#         config["gatk"]["dir_clean_sam"] + "{sample}.bam",
-#     # conda:
-#     #     config["conda_env"]["map_reads"]
-#     shell:
-#         """
-#         gatk SamFormatConverter -I {input.sam} -O {output}
-#         """
+# gatk - clean sam file (remove artifacts in SAM/BAM files)
+# *********************************************************************
+rule gatk_clean_sam:
+    input:
+        bam=rules.bwa_mem.output,
+        genome=rules.get_genome_data.output.genome,
+    output:
+        clean=config["gatk_clean"]["dir"] + "{sample}.bam",
+    log:
+        config["gatk_clean"]["log"] + "{sample}.log",
+    params:
+        java_opts="",
+    conda:
+        config["conda_env"]["gatk"]
+    shell:
+        """
+        gatk CleanSam \
+            -R {input.genome} \
+            -I {input.bam} \
+            -O {output.clean} \
+            2> {log}
+        """
+
+
 # # bwa/samtools/sambamba: [-a bwtsw|is]
 # # *********************************************************************
 # rule bwa_map_reads:

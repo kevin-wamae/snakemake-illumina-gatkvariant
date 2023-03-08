@@ -4,6 +4,7 @@
 # conda environment files
 conda_env:
    bedops: env/bedops.yaml  # bedops
+   bwa: env/bwa.yaml        # bwa
    gatk: env/gatk.yaml      # gatk
 
 # number of threads to use, whenever possible
@@ -80,9 +81,20 @@ bwa:
    log: output/4_mapped_reads/1_bwa/log/          # log file
 
 
-gatk:
-   dir_clean_sam: output/4_mapped_reads/2_gatk_clean_sam/          # output directory
-   dir_clean_sam_log: output/4_mapped_reads/2_gatk_clean_sam/log/  # output directory
+
+# gatk - clean sam
+# ----------------------------------------------------------------
+gatk_clean:
+   dir: output/4_mapped_reads/2_gatk_clean/      # output directory
+   log: output/4_mapped_reads/2_gatk_clean/logs/  # output directory
+
+
+
+# gatk - sort sam
+# ----------------------------------------------------------------
+gatk_sort_sam:
+   dir: output/4_mapped_reads/3_gatk_sort/       # output directory
+   log: output/4_mapped_reads/2_gatk_sort/logs/  # output directory
 
 # # create_genome_index - generate index files for genome mapping
 # # ----------------------------------------------------------------
