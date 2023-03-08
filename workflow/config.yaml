@@ -115,6 +115,10 @@ samtools_view:
    core: input/bed/Pf3D7_core_genome.bed       # bed file with core genome regions
 
 
+gatk_coverage:
+   dir: output/4_mapped_reads/6_gatk_depth/      # output directory
+
+
 
 # # create_genome_index - generate index files for genome mapping
 # # ----------------------------------------------------------------

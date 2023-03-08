@@ -69,6 +69,8 @@ rule all:
         # samtools
         expand(config["samtools_view"]["dir"] + "{sample}.bam", sample=SAMPLES),
         expand(config["samtools_view"]["dir"] + "{sample}.bam.bai", sample=SAMPLES),
+        # ------------------------------------
+        expand(config["gatk_coverage"]["dir"] + "{sample}", sample=SAMPLES),
         # # ------------------------------------
         # # samtools_mapping_stats
         # expand(
@@ -306,6 +308,27 @@ rule samtools_view:
             {input.bam} \
             > {output.bam}
         samtools index {output.bam} {output.index}
+        """
+
+
+# gatk - DepthOfCoverage (calculate coverage across genomic regions)
+# *********************************************************************
+rule gatk_depth_of_coverage:
+    input:
+        bam=rules.samtools_view.output.bam,
+        genome=rules.get_genome_data.output.genome,
+        intervals=config["samtools_view"]["core"],
+    output:
+        out_basename=config["gatk_coverage"]["dir"] + "{sample}",
+    conda:
+        config["conda_env"]["gatk"]
+    shell:
+        """
+        gatk DepthOfCoverage \
+            --input {input.bam} \
+            --intervals {input.intervals} \
+            --reference {input.genome} \
+            --output {output.out_basename}
         """
 
 
