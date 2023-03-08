@@ -46,17 +46,13 @@ rule all:
         ),
         # ------------------------------------
         # bwa_index
-        multiext(
-            config["get_genome_data"]["dir_fasta"] + "genome",
-            ".amb",
-            ".ann",
-            ".bwt",
-            ".pac",
-            ".sa",
-        ),
+        config["bwa"]["index"],
         # ------------------------------------
         # bwa_mem
         expand(config["bwa"]["dir"] + "{sample}.sam", sample=SAMPLES),
+        # # ------------------------------------
+        # # gatk_samtobam
+        # expand(config["gatk"]["dir_clean_sam"] + "{sample}.bam", sample=SAMPLES),
         # # ------------------------------------
         # # samtools_mapping_stats
         # expand(
@@ -156,20 +152,13 @@ rule bwa_index:
     input:
         genome=rules.get_genome_data.output.genome,
     output:
-        idx=multiext(
-            config["get_genome_data"]["dir_fasta"] + "genome",
-            ".amb",
-            ".ann",
-            ".bwt",
-            ".pac",
-            ".sa",
-        ),
-    log:
-        config["get_genome_data"]["dir_fasta"] + "genome.bwa.index.log",
-    params:
-        algorithm="bwtsw",
-    wrapper:
-        "master/bio/bwa/index"
+        index=touch(config["bwa"]["index"]),
+    conda:
+        config["conda_env"]["bwa"]
+    shell:
+        """
+        bwa index -p {output.index} {input.genome}
+        """
 
 
 # bwa - map reads to genome
@@ -180,7 +169,7 @@ rule bwa_mem:
             rules.trimmomatic.output.r1,
             rules.trimmomatic.output.r2,
         ],
-        idx=rules.bwa_index.output.idx,
+        idx=rules.bwa_index.output,
     output:
         config["bwa"]["dir"] + "{sample}.sam",
     log:
@@ -193,6 +182,20 @@ rule bwa_mem:
         "master/bio/bwa/mem"
 
 
+# # gatk - clean sam file (remove artifacts in SAM/BAM files)
+# # *********************************************************************
+# rule gatk_samtobam:
+#     input:
+#         ref=config["get_genome_data"]["dir_fasta"],
+#         sam=rules.bwa_mem.output,
+#     output:
+#         config["gatk"]["dir_clean_sam"] + "{sample}.bam",
+#     # conda:
+#     #     config["conda_env"]["map_reads"]
+#     shell:
+#         """
+#         gatk SamFormatConverter -I {input.sam} -O {output}
+#         """
 # # bwa/samtools/sambamba: [-a bwtsw|is]
 # # *********************************************************************
 # rule bwa_map_reads:

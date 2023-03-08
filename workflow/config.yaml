@@ -4,7 +4,8 @@
 # conda environment files
 conda_env:
    bedops: env/bedops.yaml       # bedops
-   map_reads: env/map_reads.yaml # bwa, samtools, picard, gatk
+   bwa: env/bwa.yaml             # bwa
+   map_reads: env/map_reads.yaml # gatk
 
 # number of threads to use, whenever possible
 threads: 4  
@@ -75,8 +76,9 @@ trimmomatic:
 # bwa - map reads to genome
 # ----------------------------------------------------------------
 bwa:
-   dir: output/4_mapped_reads/1_bwa/  # output directory
-   log: output/4_mapped_reads/1_bwa/log/  # log file
+   index: output/2_genome_reference/index/genome  # genome fasta file
+   dir: output/4_mapped_reads/1_bwa/              # output directory
+   log: output/4_mapped_reads/1_bwa/log/          # log file
 
 
 gatk:
