@@ -3,9 +3,10 @@
 # ****************************************************************
 # conda environment files
 conda_env:
-   bedops: env/bedops.yaml  # bedops
-   bwa: env/bwa.yaml        # bwa
-   gatk: env/gatk.yaml      # gatk
+   bedops: env/bedops.yaml      # bedops
+   bwa: env/bwa.yaml            # bwa
+   gatk: env/gatk.yaml          # gatk
+   samtools: env/samtools.yaml  # samtools
 
 # number of threads to use, whenever possible
 threads: 4  
@@ -35,9 +36,9 @@ input:
 # copy genomes files to output directory
 # ----------------------------------------------------------------
 get_genome_data:
-   dir_fasta: output/2_genome_reference/fasta/       # output directory
-   fasta: output/2_genome_reference/fasta/genome.fa  # genome fasta file, copied from snpeff database
-   gff: output/2_genome_reference/gff/genome.gff     # genome gff file, copied from snpeff database
+   dir_fasta: output/2_genome_reference/fasta/        # output directory
+   fasta: output/2_genome_reference/fasta/genome.fa   # genome fasta file, copied from snpeff database
+   gff: output/2_genome_reference/gff/genome.gff      # genome gff file, copied from snpeff database
    dict: output/2_genome_reference/fasta/genome.dict  # genome dict file, generated from genome fasta file
 
 
@@ -70,11 +71,12 @@ trimmomatic:
    extra:                        # extra options to pass to trimmomatic
       - "-threads 4"
 
+
 # ----------------------------------------------------------------
 #                             read mapping
 # ----------------------------------------------------------------
 
-# bwa - map reads to genome
+# bwa_mem
 # ----------------------------------------------------------------
 bwa:
    index: output/2_genome_reference/index/genome  # genome fasta file
@@ -82,27 +84,35 @@ bwa:
    log: output/4_mapped_reads/1_bwa/log/          # log file
 
 
-
-# gatk - clean sam
+# gatk_clean_sam
 # ----------------------------------------------------------------
 gatk_clean:
    dir: output/4_mapped_reads/2_gatk_clean/      # output directory
 
 
 
-# gatk - sort sam
+# gatk_sort_sam
 # ----------------------------------------------------------------
 gatk_sort:
    dir: output/4_mapped_reads/3_gatk_sort/       # output directory
 
 
 
-# gatk - mark duplicates
+# gatk_markdup
 # ----------------------------------------------------------------
 gatk_markdup:
    dir: output/4_mapped_reads/4_gatk_markdup/              # output directory
    metrics: output/4_mapped_reads/4_gatk_markdup/metrics/  # output directory
    log: output/4_mapped_reads/4_gatk_markdup/log/          # output directory
+
+
+
+# samtools_view
+# ----------------------------------------------------------------
+samtools_view:
+   dir: output/4_mapped_reads/5_samtools/      # output directory
+   log: output/4_mapped_reads/5_samtools/log/  # output directory
+   core: input/bed/Pf3D7_core_genome.bed       # bed file with core genome regions
 
 
 

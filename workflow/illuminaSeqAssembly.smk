@@ -65,6 +65,10 @@ rule all:
         expand(
             config["gatk_markdup"]["metrics"] + "{sample}.metrics.txt", sample=SAMPLES
         ),
+        # ------------------------------------
+        # samtools
+        expand(config["samtools_view"]["dir"] + "{sample}.bam", sample=SAMPLES),
+        expand(config["samtools_view"]["dir"] + "{sample}.bam.bai", sample=SAMPLES),
         # # ------------------------------------
         # # samtools_mapping_stats
         # expand(
@@ -274,6 +278,35 @@ rule gatk_markdup:
     threads: 8
     wrapper:
         "master/bio/gatk/markduplicatesspark"
+
+
+# samtools - view (keep reads in core genome regions of BED file)
+# *********************************************************************
+rule samtools_view:
+    input:
+        bam=rules.gatk_markdup.output.bam,
+        genome=rules.get_genome_data.output.genome,
+        core_genome=config["samtools_view"]["core"],
+    output:
+        bam=config["samtools_view"]["dir"] + "{sample}.bam",
+        index=config["samtools_view"]["dir"] + "{sample}.bam.bai",
+    log:
+        config["samtools_view"]["log"] + "{sample}.log",
+    threads: config["threads"]
+    conda:
+        config["conda_env"]["samtools"]
+    shell:
+        """
+        samtools view \
+            -b \
+            -h \
+            -@ {threads} \
+            -T {input.genome} \
+            -L {input.core_genome} \
+            {input.bam} \
+            > {output.bam}
+        samtools index {output.bam} {output.index}
+        """
 
 
 # # bwa/samtools/sambamba: [-a bwtsw|is]
