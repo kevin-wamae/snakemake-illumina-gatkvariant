@@ -59,9 +59,12 @@ rule all:
         # ------------------------------------
         # gatk_sort
         expand(config["gatk_sort"]["dir"] + "{sample}.bam", sample=SAMPLES),
-        # # ------------------------------------
-        # # gatk_markdup
-        # expand(config["gatk_markdup"]["dir"] + "{sample}.bam", sample=SAMPLES),
+        # ------------------------------------
+        # gatk_markdup
+        expand(config["gatk_markdup"]["dir"] + "{sample}.bam", sample=SAMPLES),
+        expand(
+            config["gatk_markdup"]["metrics"] + "{sample}.metrics.txt", sample=SAMPLES
+        ),
         # # ------------------------------------
         # # samtools_mapping_stats
         # expand(
@@ -250,6 +253,27 @@ rule gatk_sort_sam:
             -O {output.sorted} \
             --SORT_ORDER coordinate
         """
+
+
+# gatk - mark duplicates
+# *********************************************************************
+rule gatk_markdup:
+    input:
+        bam=rules.gatk_sort_sam.output.sorted,
+    output:
+        bam=config["gatk_markdup"]["dir"] + "{sample}.bam",
+        metrics=config["gatk_markdup"]["metrics"] + "{sample}.metrics.txt",
+    log:
+        config["gatk_markdup"]["log"] + "{sample}.log",
+    params:
+        extra="",
+        java_opts="",
+        #spark_runner="",  # optional, local by default
+        #spark_master="",  # optional
+        #spark_extra="", # optional
+    threads: 8
+    wrapper:
+        "master/bio/gatk/markduplicatesspark"
 
 
 # # bwa/samtools/sambamba: [-a bwtsw|is]

@@ -38,7 +38,7 @@ get_genome_data:
    dir_fasta: output/2_genome_reference/fasta/       # output directory
    fasta: output/2_genome_reference/fasta/genome.fa  # genome fasta file, copied from snpeff database
    gff: output/2_genome_reference/gff/genome.gff     # genome gff file, copied from snpeff database
-   dict: output/2_genome_reference/dict/genome.dict  # genome dict file, generated from genome fasta file
+   dict: output/2_genome_reference/fasta/genome.dict  # genome dict file, generated from genome fasta file
 
 
 
@@ -62,7 +62,7 @@ bedops_gff2bed:
 # ----------------------------------------------------------------
 trimmomatic:
    dir: output/3_trimmed_fastq/  # output directory
-   trimmer:                      # See trimmomatic manual for adding additional options, e.g. for adapter trimming.
+   trimmer:                      # See trimmomatic manual for adding additional options
       - "LEADING:3"
       - "TRAILING:3"
       - "SLIDINGWINDOW:4:15"
@@ -100,7 +100,11 @@ gatk_sort:
 # gatk - mark duplicates
 # ----------------------------------------------------------------
 gatk_markdup:
-   dir: output/4_mapped_reads/4_gatk_mark_duplicates/       # output directory
+   dir: output/4_mapped_reads/4_gatk_markdup/              # output directory
+   metrics: output/4_mapped_reads/4_gatk_markdup/metrics/  # output directory
+   log: output/4_mapped_reads/4_gatk_markdup/log/          # output directory
+
+
 
 # # create_genome_index - generate index files for genome mapping
 # # ----------------------------------------------------------------
