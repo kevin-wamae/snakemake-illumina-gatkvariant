@@ -92,9 +92,9 @@ gatk_clean:
 
 # gatk - sort sam
 # ----------------------------------------------------------------
-gatk_sort_sam:
+gatk_sort:
    dir: output/4_mapped_reads/3_gatk_sort/       # output directory
-   log: output/4_mapped_reads/2_gatk_sort/logs/  # output directory
+   log: output/4_mapped_reads/3_gatk_sort/logs/  # output directory
 
 # # create_genome_index - generate index files for genome mapping
 # # ----------------------------------------------------------------

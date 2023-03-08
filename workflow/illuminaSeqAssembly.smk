@@ -51,8 +51,11 @@ rule all:
         # bwa_mem
         expand(config["bwa"]["dir"] + "{sample}.bam", sample=SAMPLES),
         # ------------------------------------
-        # gatk_clean_sam
+        # gatk_clean
         expand(config["gatk_clean"]["dir"] + "{sample}.bam", sample=SAMPLES),
+        # ------------------------------------
+        # gatk_sort
+        expand(config["gatk_sort"]["dir"] + "{sample}.bam", sample=SAMPLES),
         # # ------------------------------------
         # # samtools_mapping_stats
         # expand(
@@ -191,8 +194,6 @@ rule gatk_clean_sam:
         genome=rules.get_genome_data.output.genome,
     output:
         clean=config["gatk_clean"]["dir"] + "{sample}.bam",
-    log:
-        config["gatk_clean"]["log"] + "{sample}.log",
     params:
         java_opts="",
     conda:
@@ -202,8 +203,29 @@ rule gatk_clean_sam:
         gatk CleanSam \
             -R {input.genome} \
             -I {input.bam} \
-            -O {output.clean} \
-            2> {log}
+            -O {output.clean}
+        """
+
+
+# gatk - sort sam
+# *********************************************************************
+rule gatk_sort_sam:
+    input:
+        bam=rules.gatk_clean_sam.output.clean,
+        genome=rules.get_genome_data.output.genome,
+    output:
+        sorted=config["gatk_sort"]["dir"] + "{sample}.bam",
+    params:
+        java_opts="",
+    conda:
+        config["conda_env"]["gatk"]
+    shell:
+        """
+        gatk SortSam \
+            -R {input.genome} \
+            -I {input.bam} \
+            -O {output.sorted} \
+            --SORT_ORDER coordinate
         """
 
 
