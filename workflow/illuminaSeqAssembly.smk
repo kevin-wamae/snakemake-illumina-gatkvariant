@@ -70,13 +70,23 @@ rule all:
         expand(config["samtools_view"]["dir"] + "{sample}.bam", sample=SAMPLES),
         expand(config["samtools_view"]["dir"] + "{sample}.bam.bai", sample=SAMPLES),
         # ------------------------------------
-        # samtools_idxstats / samtools_flagstats
+        # samtools_idxstats & samtools_flagstats
         expand(
             config["samtools_stats"]["dir"] + "{sample}.bam.idxstats.txt",
             sample=SAMPLES,
         ),
         expand(
             config["samtools_stats"]["dir"] + "{sample}.bam.flagstat.txt",
+            sample=SAMPLES,
+        ),
+        # ------------------------------------
+        # gatk_collect_insert_size_metrics
+        expand(
+            config["gatk_insert_size"]["dir_metrics"] + "{sample}.metrics.txt",
+            sample=SAMPLES,
+        ),
+        expand(
+            config["gatk_insert_size"]["dir_histogram"] + "{sample}.histogram.pdf",
             sample=SAMPLES,
         ),
         # ------------------------------------
@@ -90,18 +100,9 @@ rule all:
             config["gatk_haplotypecaller"]["dir"] + "{sample}.vcf.gz", sample=SAMPLES
         ),
         # # ------------------------------------
-        # # samtools_mapping_stats
-        # expand(
-        #     config["mapping_stats"]["dir"] + "{sample}.bam.idxstats.txt",
-        #     sample=SAMPLES,
-        # ),
-        # expand(
-        #     config["mapping_stats"]["dir"] + "{sample}.bam.flagstats.txt",
-        #     sample=SAMPLES,
-        # ),
-        # # ------------------------------------
-        # # bcftools_variant_calling
-        # expand(config["bcftools"]["dir"] + "{sample}.vcf.gz", sample=SAMPLES),
+        # gatk_genomics_db_import
+        config["gatk_genomicsdbimport"]["dir"],
+        # config["gatk_genomicsdbimport"]["dir"],
         # # ------------------------------------
         # # snpeff_annotate_vcf
         # expand(config["snpEff"]["dir"] + "{sample}.vcf.gz", sample=SAMPLES),
@@ -376,12 +377,39 @@ rule samtools_flagstat:
         """
 
 
+# gatk CollectInsertSizeMetrics
+# *********************************************************************
+rule gatk_collect_insert_size_metrics:
+    input:
+        bam=rules.samtools_view.output.bam,
+        genome=rules.gather_genome_data.output.genome,
+    output:
+        metrics=config["gatk_insert_size"]["dir_metrics"] + "{sample}.metrics.txt",
+        histogram=config["gatk_insert_size"]["dir_histogram"] + "{sample}.histogram.pdf",
+    log:
+        config["gatk_insert_size"]["log"] + "{sample}.log",
+    params:
+        extra="",
+        java_opts="",
+    conda:
+        config["conda_env"]["gatk"]
+    shell:
+        """
+        gatk CollectInsertSizeMetrics \
+            {params.extra} \
+            -R {input.genome} \
+            -I {input.bam} \
+            -O {output.metrics} \
+            -H {output.histogram}
+        """
+
+
 # ######################################################################
 #                        step 4 - variant calling
 # ######################################################################
 
 
-# gatk HaplotypeCaller
+# gatk HaplotypeCaller - generate gVCFs
 # *********************************************************************
 rule gatk_haplotypecaller:
     input:
@@ -408,4 +436,33 @@ rule gatk_haplotypecaller:
             -L {input.intervals} \
             -I {input.bam} \
             -O {output.vcf}
+        """
+
+
+# gatk GenomicsDBImport - merge gVCFs into one genomic database
+# *********************************************************************
+rule gatk_genomics_db_import:
+    input:
+        vcf=expand(rules.gatk_haplotypecaller.output.vcf, sample=SAMPLES),
+        genome=rules.gather_genome_data.output.genome,
+        intervals=config["gather_genome_data"]["core"],
+    output:
+        dir=directory(config["gatk_genomicsdbimport"]["dir"]),
+    log:
+        config["gatk_genomicsdbimport"]["dir"] + "genomicsdb.log",
+    params:
+        java_opts="",
+        extra=config["gatk_genomicsdbimport"]["extra"],
+        threads=config["threads"],
+    threads: config["threads"]
+    conda:
+        config["conda_env"]["gatk"]
+    shell:
+        """
+        gatk GenomicsDBImport \
+            {params.extra} \
+            --reader-threads {params.threads} \
+            -V {input.vcf} \
+            --genomicsdb-workspace-path {output.dir} \
+            -L {input.intervals}
         """

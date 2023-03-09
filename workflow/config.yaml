@@ -162,3 +162,15 @@ gatk_haplotypecaller:
       - "--min-base-quality-score 10"
       - "--disable-read-filter null"
       - "--base-quality-score-threshold 12"
+
+
+
+# gatk_genomics_db_import
+# ----------------------------------------------------------------
+gatk_genomicsdbimport:
+   dir: output/5_variants/2_gatk_genomicsdbimport/genomicsdb  # output directory
+   extra:
+      # - "--sample-name-map list.tsv"          # optional - uncomment and replace list.tsv. See gatk manual for details
+      - "--batch-size 0"
+      - "--genomicsdb-segment-size 1048576"
+      - "--genomicsdb-vcf-buffer-size 16384"
