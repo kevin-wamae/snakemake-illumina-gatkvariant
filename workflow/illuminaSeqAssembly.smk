@@ -22,13 +22,13 @@ configfile: "workflow/config.yaml"
 rule all:
     input:
         # ------------------------------------
-        # get_genome_data
-        config["get_genome_data"]["fasta"],
-        config["get_genome_data"]["gff"],
+        # gather_genome_data
+        config["gather_genome_data"]["fasta"],
+        config["gather_genome_data"]["gff"],
         # ------------------------------------
         # genome_dict
-        config["get_genome_data"]["dict"],
-        # config["get_genome_data"]["regions"],
+        config["gather_genome_data"]["dict"],
+        # config["gather_genome_data"]["regions"],
         # ------------------------------------
         # samtools_index
         config["samtools_index"]["fasta_idx"],
@@ -79,6 +79,16 @@ rule all:
             config["samtools_stats"]["dir"] + "{sample}.bam.flagstat.txt",
             sample=SAMPLES,
         ),
+        # ------------------------------------
+        # gatk_realign
+        expand(
+            config["gatk_haplotypecaller"]["dir"] + "{sample}.vcf.gz", sample=SAMPLES
+        ),
+        # ------------------------------------
+        # gatk_haplotypecaller
+        expand(
+            config["gatk_haplotypecaller"]["dir"] + "{sample}.vcf.gz", sample=SAMPLES
+        ),
         # # ------------------------------------
         # # samtools_mapping_stats
         # expand(
@@ -101,15 +111,20 @@ rule all:
         # expand(config["snpSift"]["dir"] + "{sample}.allele.freq.txt", sample=SAMPLES),
 
 
+# ######################################################################
+#                     step 1 - prepare genome data
+# ######################################################################
+
+
 # genome data - download genome data
 # *********************************************************************
-rule get_genome_data:
+rule gather_genome_data:
     input:
         genome=config["input"]["genome"]["fasta"],
         gff=config["input"]["genome"]["gff"],
     output:
-        genome=config["get_genome_data"]["fasta"],
-        gff=config["get_genome_data"]["gff"],
+        genome=config["gather_genome_data"]["fasta"],
+        gff=config["gather_genome_data"]["gff"],
     run:
         shell(  # cp - copy genome fasta file from snpeff database location
             """
@@ -127,9 +142,9 @@ rule get_genome_data:
 # *********************************************************************
 rule gatk_genome_dict:
     input:
-        genome=rules.get_genome_data.output.genome,
+        genome=rules.gather_genome_data.output.genome,
     output:
-        genome_dict=config["get_genome_data"]["dict"],
+        genome_dict=config["gather_genome_data"]["dict"],
     conda:
         config["conda_env"]["gatk"]
     shell:
@@ -144,7 +159,7 @@ rule gatk_genome_dict:
 # *********************************************************************s
 rule samtools_index:
     input:
-        rules.get_genome_data.output.genome,
+        rules.gather_genome_data.output.genome,
     output:
         config["samtools_index"]["fasta_idx"],
     wrapper:
@@ -155,7 +170,7 @@ rule samtools_index:
 # *********************************************************************
 rule bedops_gff2bed:
     input:
-        rules.get_genome_data.output.gff,
+        rules.gather_genome_data.output.gff,
     output:
         config["bedops_gff2bed"]["bed"],
     params:
@@ -169,7 +184,14 @@ rule bedops_gff2bed:
         """
 
 
+# ######################################################################
+#                     step 2 - quality control
+# ######################################################################
+
+
 # trimmomatic - clip illumina adapters, paired end mode
+# TODO: 1. add support for single end mode
+# TODO: 2. review the parameters
 # *********************************************************************
 rule trimmomatic:
     input:
@@ -189,11 +211,16 @@ rule trimmomatic:
         "master/bio/trimmomatic/pe"
 
 
+# ######################################################################
+#                            step 3 - mapping
+# ######################################################################
+
+
 # bwa - generate bwa genome-index files for mapping
 # *********************************************************************
 rule bwa_index:
     input:
-        genome=rules.get_genome_data.output.genome,
+        genome=rules.gather_genome_data.output.genome,
     output:
         index=touch(config["bwa"]["index"]),
     conda:
@@ -231,7 +258,7 @@ rule bwa_mem:
 rule gatk_clean_sam:
     input:
         bam=rules.bwa_mem.output,
-        genome=rules.get_genome_data.output.genome,
+        genome=rules.gather_genome_data.output.genome,
     output:
         clean=config["gatk_clean"]["dir"] + "{sample}.bam",
     params:
@@ -252,7 +279,7 @@ rule gatk_clean_sam:
 rule gatk_sort_sam:
     input:
         bam=rules.gatk_clean_sam.output.clean,
-        genome=rules.get_genome_data.output.genome,
+        genome=rules.gather_genome_data.output.genome,
     output:
         sorted=config["gatk_sort"]["dir"] + "{sample}.bam",
     params:
@@ -295,8 +322,8 @@ rule gatk_markdup:
 rule samtools_view:
     input:
         bam=rules.gatk_markdup.output.bam,
-        genome=rules.get_genome_data.output.genome,
-        core_genome=config["samtools_view"]["core"],
+        genome=rules.gather_genome_data.output.genome,
+        core_genome=config["gather_genome_data"]["core"],
     output:
         bam=config["samtools_view"]["dir"] + "{sample}.bam",
         index=config["samtools_view"]["dir"] + "{sample}.bam.bai",
@@ -346,4 +373,39 @@ rule samtools_flagstat:
     shell:
         """
         samtools flagstat {input} > {output}
+        """
+
+
+# ######################################################################
+#                        step 4 - variant calling
+# ######################################################################
+
+
+# gatk HaplotypeCaller
+# *********************************************************************
+rule gatk_haplotypecaller:
+    input:
+        bam=rules.samtools_view.output.bam,
+        genome=rules.gather_genome_data.output.genome,
+        intervals=config["gather_genome_data"]["core"],
+    output:
+        vcf=config["gatk_haplotypecaller"]["dir"] + "{sample}.vcf.gz",
+    log:
+        config["gatk_haplotypecaller"]["log"] + "{sample}.log",
+    params:
+        extra=config["gatk_haplotypecaller"]["extra"],
+        java_opts="",
+        threads=config["threads"],
+    threads: config["threads"]
+    conda:
+        config["conda_env"]["gatk"]
+    shell:
+        """
+        gatk HaplotypeCaller \
+            {params.extra} \
+            --native-pair-hmm-threads {params.threads} \
+            -R {input.genome} \
+            -L {input.intervals} \
+            -I {input.bam} \
+            -O {output.vcf}
         """

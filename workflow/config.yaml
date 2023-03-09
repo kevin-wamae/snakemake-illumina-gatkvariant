@@ -35,10 +35,11 @@ input:
 
 # copy genomes files to output directory
 # ----------------------------------------------------------------
-get_genome_data:
+gather_genome_data:
    dir_fasta: output/2_genome_reference/fasta/        # output directory
    fasta: output/2_genome_reference/fasta/genome.fa   # genome fasta file, copied from snpeff database
    gff: output/2_genome_reference/gff/genome.gff      # genome gff file, copied from snpeff database
+   core: input/bed/Pf3D7_core_genome.bed              # bed file with core genome regions
    dict: output/2_genome_reference/fasta/genome.dict  # genome dict file, generated from genome fasta file
 
 
@@ -112,10 +113,36 @@ gatk_markdup:
 samtools_view:
    dir: output/4_mapped_reads/5_samtools/      # output directory
    log: output/4_mapped_reads/5_samtools/log/  # output directory
-   core: input/bed/Pf3D7_core_genome.bed       # bed file with core genome regions
 
 
 # mapping_qual_stats - get mapping qual statistics
 # ----------------------------------------------------------------
 samtools_stats:                         
    dir: output/4_mapped_reads/6_map_qual_stats/  # output directory
+
+
+
+# ######################################################################
+#                        step 4 - variant calling
+# ######################################################################
+
+
+# gatk_haplotypecaller
+# ----------------------------------------------------------------
+gatk_haplotypecaller:
+   dir: output/5_variants/1_gatk_haplotypecaller/      # output directory
+   log: output/5_variants/1_gatk_haplotypecaller/log/  # output directory
+   extra:
+      - "--emit-ref-confidence GVCF"
+      - "--sample-ploidy 2"
+      - "--assembly-region-padding 100"
+      - "--max-num-haplotypes-in-population 128"
+      - "--kmer-size 10"
+      - "--kmer-size 25"
+      - "--min-dangling-branch-length 4"
+      - "--heterozygosity 0.001"
+      - "--indel-heterozygosity 1.25E-4"
+      - "--min-assembly-region-size 50"
+      - "--min-base-quality-score 10"
+      - "--disable-read-filter null"
+      - "--base-quality-score-threshold 12"
