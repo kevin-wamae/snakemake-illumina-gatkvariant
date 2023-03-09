@@ -1,6 +1,8 @@
 # ****************************************************************
 #                              DEPENDENCIES
 # ****************************************************************
+
+
 # conda environment files
 conda_env:
    bedops: env/bedops.yaml      # bedops
@@ -10,6 +12,8 @@ conda_env:
 
 # number of threads to use, whenever possible
 threads: 4  
+
+
 
 # ****************************************************************
 #                              INPUT
@@ -77,6 +81,7 @@ trimmomatic:
 #                             read mapping
 # ----------------------------------------------------------------
 
+
 # bwa_mem
 # ----------------------------------------------------------------
 bwa:
@@ -115,11 +120,22 @@ samtools_view:
    log: output/4_mapped_reads/5_samtools/log/  # output directory
 
 
-# mapping_qual_stats - get mapping qual statistics
+
+# samtools_idxstats & samtools_flagstat
 # ----------------------------------------------------------------
 samtools_stats:                         
    dir: output/4_mapped_reads/6_map_qual_stats/  # output directory
 
+
+
+# gatk_collect_insert_size_metrics
+# ----------------------------------------------------------------
+gatk_insert_size:
+   dir_metrics: output/4_mapped_reads/7_insert_size/metrics      # output directory
+   dir_histogram: output/4_mapped_reads/7_insert_size/histogram  # output directory
+   log: output/4_mapped_reads/7_insert_size/log                  # log files
+   extra:                                                        # extra options to pass to gatk
+      - "--MINIMUM_PCT 0.05"
 
 
 # ######################################################################
