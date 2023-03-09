@@ -102,7 +102,11 @@ rule all:
         # # ------------------------------------
         # gatk_genomics_db_import
         config["gatk_genomicsdbimport"]["dir"],
-        # config["gatk_genomicsdbimport"]["dir"],
+        # # ------------------------------------
+        # gatk_genotype_gvcfs
+        expand(
+            config["gatk_genotype_gvcfs"]["dir"] + "genotypes.vcf.gz", sample=SAMPLES
+        ),
         # # ------------------------------------
         # # snpeff_annotate_vcf
         # expand(config["snpEff"]["dir"] + "{sample}.vcf.gz", sample=SAMPLES),
@@ -146,6 +150,8 @@ rule gatk_genome_dict:
         genome=rules.gather_genome_data.output.genome,
     output:
         genome_dict=config["gather_genome_data"]["dict"],
+    params:
+        java_opts=config["gatk_java_opts"],
     conda:
         config["conda_env"]["gatk"]
     shell:
@@ -157,6 +163,7 @@ rule gatk_genome_dict:
 
 
 # samtools index - index genome fasta file
+# TODO: replace wrapper with shell command
 # *********************************************************************s
 rule samtools_index:
     input:
@@ -193,6 +200,7 @@ rule bedops_gff2bed:
 # trimmomatic - clip illumina adapters, paired end mode
 # TODO: 1. add support for single end mode
 # TODO: 2. review the parameters
+# TODO: 3. replace wrapper with shell command
 # *********************************************************************
 rule trimmomatic:
     input:
@@ -233,6 +241,7 @@ rule bwa_index:
 
 
 # bwa - map reads to genome
+# TODO: replace wrapper with shell command
 # *********************************************************************
 rule bwa_mem:
     input:
@@ -263,12 +272,12 @@ rule gatk_clean_sam:
     output:
         clean=config["gatk_clean"]["dir"] + "{sample}.bam",
     params:
-        java_opts="",
+        java_opts=config["gatk_java_opts"],
     conda:
         config["conda_env"]["gatk"]
     shell:
         """
-        gatk CleanSam \
+        gatk {params.java_opts} CleanSam \
             -R {input.genome} \
             -I {input.bam} \
             -O {output.clean}
@@ -284,12 +293,12 @@ rule gatk_sort_sam:
     output:
         sorted=config["gatk_sort"]["dir"] + "{sample}.bam",
     params:
-        java_opts="",
+        java_opts=config["gatk_java_opts"],
     conda:
         config["conda_env"]["gatk"]
     shell:
         """
-        gatk SortSam \
+        gatk {params.java_opts} SortSam \
             -R {input.genome} \
             -I {input.bam} \
             -O {output.sorted} \
@@ -298,6 +307,7 @@ rule gatk_sort_sam:
 
 
 # gatk - mark duplicates
+# TODO: replace wrapper with shell command
 # *********************************************************************
 rule gatk_markdup:
     input:
@@ -310,9 +320,6 @@ rule gatk_markdup:
     params:
         extra="",
         java_opts="",
-        #spark_runner="",  # optional, local by default
-        #spark_master="",  # optional
-        #spark_extra="", # optional
     threads: 8
     wrapper:
         "master/bio/gatk/markduplicatesspark"
@@ -390,12 +397,12 @@ rule gatk_collect_insert_size_metrics:
         config["gatk_insert_size"]["log"] + "{sample}.log",
     params:
         extra="",
-        java_opts="",
+        java_opts=config["gatk_java_opts"],
     conda:
         config["conda_env"]["gatk"]
     shell:
         """
-        gatk CollectInsertSizeMetrics \
+        gatk {params.java_opts} CollectInsertSizeMetrics \
             {params.extra} \
             -R {input.genome} \
             -I {input.bam} \
@@ -421,16 +428,14 @@ rule gatk_haplotypecaller:
     log:
         config["gatk_haplotypecaller"]["log"] + "{sample}.log",
     params:
-        extra=config["gatk_haplotypecaller"]["extra"],
-        java_opts="",
+        java_opts=config["gatk_java_opts"],
         threads=config["threads"],
     threads: config["threads"]
     conda:
         config["conda_env"]["gatk"]
     shell:
         """
-        gatk HaplotypeCaller \
-            {params.extra} \
+        gatk {params.java_opts} HaplotypeCaller \
             --native-pair-hmm-threads {params.threads} \
             -R {input.genome} \
             -L {input.intervals} \
@@ -451,7 +456,7 @@ rule gatk_genomics_db_import:
     log:
         config["gatk_genomicsdbimport"]["dir"] + "genomicsdb.log",
     params:
-        java_opts="",
+        java_opts=config["gatk_java_opts"],
         extra=config["gatk_genomicsdbimport"]["extra"],
         threads=config["threads"],
     threads: config["threads"]
@@ -459,10 +464,39 @@ rule gatk_genomics_db_import:
         config["conda_env"]["gatk"]
     shell:
         """
-        gatk GenomicsDBImport \
+        gatk {params.java_opts} GenomicsDBImport \
             {params.extra} \
             --reader-threads {params.threads} \
             -V {input.vcf} \
             --genomicsdb-workspace-path {output.dir} \
             -L {input.intervals}
+        """
+
+
+# gatk GenotypeGVCFs - perform joint genotyping
+# *********************************************************************
+rule gatk_genotype_gvcfs:
+    input:
+        db=rules.gatk_genomics_db_import.output.dir,
+        genome=rules.gather_genome_data.output.genome,
+        intervals=config["gather_genome_data"]["core"],
+    output:
+        vcf=config["gatk_genotype_gvcfs"]["dir"] + "genotypes.vcf.gz",
+    log:
+        config["gatk_genotype_gvcfs"]["dir"] + "genotypes.log",
+    params:
+        extra=config["gatk_genotype_gvcfs"]["extra"],
+        java_opts=config["gatk_java_opts"],
+        threads=config["threads"],
+    threads: config["threads"]
+    conda:
+        config["conda_env"]["gatk"]
+    shell:
+        """
+        gatk {params.java_opts} GenotypeGVCFs \
+            {params.extra} \
+            -R {input.genome} \
+            -V gendb://{input.db} \
+            -L {input.intervals} \
+            -O {output.vcf}
         """

@@ -10,6 +10,8 @@ conda_env:
    gatk: env/gatk.yaml          # gatk
    samtools: env/samtools.yaml  # samtools
 
+
+
 # number of threads to use, whenever possible
 threads: 4  
 
@@ -138,9 +140,17 @@ gatk_insert_size:
       - "--MINIMUM_PCT 0.05"
 
 
+
 # ######################################################################
 #                        step 4 - variant calling
 # ######################################################################
+
+
+# gatk_java_opts - memory allocation for gatk tools
+# ----------------------------------------------------------------
+gatk_java_opts:   # replace '4' with the amaount of memory you want to use
+   - "--java-options '-Xmx4g -Xms4g'"     # maximum heap size  
+
 
 
 # gatk_haplotypecaller
@@ -174,3 +184,14 @@ gatk_genomicsdbimport:
       - "--batch-size 0"
       - "--genomicsdb-segment-size 1048576"
       - "--genomicsdb-vcf-buffer-size 16384"
+
+
+
+# gatk_genotype_gvcfs
+# ----------------------------------------------------------------
+gatk_genotype_gvcfs:
+   dir: output/5_variants/3_gatk_genotypeVCFs/  # output directory
+   extra:
+      - "--genomicsdb-use-bcf-codec false"
+      - "-stand-call-conf 30.0"
+      - "--max-genotype-count 1024"
