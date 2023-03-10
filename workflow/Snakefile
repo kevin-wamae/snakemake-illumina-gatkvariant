@@ -3,6 +3,37 @@
 # #####################################################################
 
 
+# table of contents
+# *********************************************************************
+## step 1 - output files
+#  1) rule all - gather all output files
+
+## step 2 - gather genome data
+#  2a) rule gather_genome_data - download and aggregate genome data
+#  2b) rule gatk_genome_dict - create genome dictionary
+#  2c) rule samtools_index - index genome fasta file
+#  2d) rule bedops_gff2bed - convert genome annotation gff to bed
+
+## step 3 - quality control
+#   3) rule trimmomatic - trim adapters and low quality bases
+
+## step 4 - map reads to genome
+#  4a) rule bwa_index - generate bwa genome-index files for mapping
+#  4b) rule bwa_mem - map reads to genome
+#  4c) rule gatk_clean - clean sam file (remove artifacts in SAM/BAM files)
+#  4d) rule gatk_sort - sort bam file
+#  4d) rule gatk_markdup - mark duplicates
+#  4e) rule samtools_view - filter reads occuring in the core genome and index the bam file
+#  4f) rule samtools_idxstats - count reads in each chromosome
+#  4g) rule samtools_flagstats - count reads in each chromosome
+#  4h) rule gatk_collect_insert_size_metrics - collect insert size metrics
+#  4i) rule gatk_haplotypecaller - call variants
+
+## step 5 - variant calling
+#  5a) rule gatk_genomics_db_import - merge gVCFs into one genomic database
+#  5b) rule gatk_genotype_gvcfs - perform joint genotyping
+
+
 # dependencies
 # *********************************************************************
 # configuration file
@@ -16,8 +47,12 @@ configfile: "workflow/config.yaml"
 # python3 workflow/rename_fastq_files.py
 (SAMPLES,) = glob_wildcards(config["input"]["fastq"] + "{sample}_R1.fastq.gz")
 
+# ######################################################################
+#               step 1 - prepare a list of all output files
+# ######################################################################
 
-# a list of all output files
+
+# 1) gather all output files
 # *********************************************************************
 rule all:
     input:
@@ -110,11 +145,11 @@ rule all:
 
 
 # ######################################################################
-#                     step 1 - prepare genome data
+#                      step 2 - gather genome data
 # ######################################################################
 
 
-# genome data - download genome data
+# 2a) genome data - download genome data
 # *********************************************************************
 rule gather_genome_data:
     input:
@@ -136,7 +171,7 @@ rule gather_genome_data:
         )
 
 
-# genome data - download genome data
+# 2b) genome data - download and aggregate genome data
 # *********************************************************************
 rule gatk_genome_dict:
     input:
@@ -155,7 +190,7 @@ rule gatk_genome_dict:
         """
 
 
-# samtools index - index genome fasta file
+# 2c) samtools index - index genome fasta file
 # TODO: replace wrapper with shell command
 # *********************************************************************s
 rule samtools_index:
@@ -167,7 +202,7 @@ rule samtools_index:
         "master/bio/samtools/faidx"
 
 
-# bedops - convert genome GFF to BED
+# 2d) bedops - convert genome GFF to BED
 # *********************************************************************
 rule bedops_gff2bed:
     input:
@@ -186,11 +221,11 @@ rule bedops_gff2bed:
 
 
 # ######################################################################
-#                     step 2 - quality control
+#                        step 3 - quality control
 # ######################################################################
 
 
-# trimmomatic - clip illumina adapters, paired end mode
+# 3) trimmomatic - trim adapters and low quality bases
 # TODO: 1. add support for single end mode
 # TODO: 2. review the parameters
 # TODO: 3. replace wrapper with shell command
@@ -214,11 +249,11 @@ rule trimmomatic:
 
 
 # ######################################################################
-#                            step 3 - mapping
+#                       step 4 - map reads to genome
 # ######################################################################
 
 
-# bwa - generate bwa genome-index files for mapping
+# 4a) bwa - generate bwa genome-index files for mapping
 # *********************************************************************
 rule bwa_index:
     input:
@@ -233,7 +268,7 @@ rule bwa_index:
         """
 
 
-# bwa - map reads to genome
+# 4b) bwa mem - map reads to genome
 # TODO: replace wrapper with shell command
 # *********************************************************************
 rule bwa_mem:
@@ -256,9 +291,9 @@ rule bwa_mem:
         "master/bio/bwa/mem"
 
 
-# gatk - clean sam file (remove artifacts in SAM/BAM files)
+# 4c) gatk - clean sam file (remove artifacts in SAM/BAM files)
 # *********************************************************************
-rule gatk_clean_sam:
+rule gatk_clean:
     input:
         bam=rules.bwa_mem.output,
         genome=rules.gather_genome_data.output.genome,
@@ -277,11 +312,11 @@ rule gatk_clean_sam:
         """
 
 
-# gatk - sort sam
+# 4d) gatk - sort sam
 # *********************************************************************
-rule gatk_sort_sam:
+rule gatk_sort:
     input:
-        bam=rules.gatk_clean_sam.output.clean,
+        bam=rules.gatk_clean.output.clean,
         genome=rules.gather_genome_data.output.genome,
     output:
         sorted=config["gatk_sort"]["dir"] + "{sample}.bam",
@@ -299,12 +334,12 @@ rule gatk_sort_sam:
         """
 
 
-# gatk - mark duplicates
+# 4e) gatk - mark duplicates
 # TODO: replace wrapper with shell command
 # *********************************************************************
 rule gatk_markdup:
     input:
-        bam=rules.gatk_sort_sam.output.sorted,
+        bam=rules.gatk_sort.output.sorted,
     output:
         bam=config["gatk_markdup"]["dir"] + "{sample}.bam",
         metrics=config["gatk_markdup"]["metrics"] + "{sample}.metrics.txt",
@@ -318,7 +353,7 @@ rule gatk_markdup:
         "master/bio/gatk/markduplicatesspark"
 
 
-# samtools - view (keep reads in core genome regions of BED file)
+# 4f) samtools - filter reads occuring in the core genome and index the bam file
 # *********************************************************************
 rule samtools_view:
     input:
@@ -347,7 +382,7 @@ rule samtools_view:
         """
 
 
-# samtools - idxstats (get mapping-quality statistics from BAM file)
+# 4g) samtools - idxstats (get mapping-quality statistics from BAM file)
 # *********************************************************************
 rule samtools_idxstats:
     input:
@@ -362,7 +397,7 @@ rule samtools_idxstats:
         """
 
 
-# samtools - flagstats (get mapping-quality statistics from BAM file)
+# 4h) samtools - flagstats (get mapping-quality statistics from BAM file)
 # *********************************************************************
 rule samtools_flagstat:
     input:
@@ -377,7 +412,7 @@ rule samtools_flagstat:
         """
 
 
-# gatk CollectInsertSizeMetrics
+# 4i) gatk CollectInsertSizeMetrics
 # *********************************************************************
 rule gatk_collect_insert_size_metrics:
     input:
@@ -405,11 +440,11 @@ rule gatk_collect_insert_size_metrics:
 
 
 # ######################################################################
-#                        step 4 - variant calling
+#                        step 5 - variant calling
 # ######################################################################
 
 
-# gatk HaplotypeCaller - generate gVCFs
+# 5a) gatk HaplotypeCaller - generate gVCFs
 # *********************************************************************
 rule gatk_haplotypecaller:
     input:
@@ -437,7 +472,7 @@ rule gatk_haplotypecaller:
         """
 
 
-# gatk GenomicsDBImport - merge gVCFs into one genomic database
+# 5b) gatk GenomicsDBImport - merge gVCFs into one genomic database
 # *********************************************************************
 rule gatk_genomics_db_import:
     input:
@@ -466,7 +501,7 @@ rule gatk_genomics_db_import:
         """
 
 
-# gatk GenotypeGVCFs - perform joint genotyping
+# 18) gatk GenotypeGVCFs - perform joint genotyping
 # *********************************************************************
 rule gatk_genotype_gvcfs:
     input:
