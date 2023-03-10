@@ -25,11 +25,11 @@ threads: 4
 # fastq files, adapters and genome files
 # ----------------------------------------------------------------
 input:
-   fastq: input/fastq/                                          # raw fastq files
+   fastq: input/fastq/                                                    # raw fastq files
    genome:
-      fasta: output/1_snpeff_database/genomes/P.falciparum.fa   # local copy of genome fasta file
-      gff: output/1_snpeff_database/P.falciparum/genes.gff      # local copy of genome gff file
-      regions: input/2_genome_reference/genome.bed.gz           # bed file with regions of interest
+      fasta: output/1_snpeff_database/genomes/P.falciparum.fa            # local copy of genome fasta file
+      gff: output/1_snpeff_database/P.falciparum/genes.gff               # local copy of genome gff file
+      core: input/bed/Pf3D7_core_genome.bed                              # bed file with core genome regions
       url: https://plasmodb.org/common/downloads/release-51/Pfalciparum3D7/fasta/data/PlasmoDB-51_Pfalciparum3D7_Genome.fasta  # url to download genome fasta file
 
 
@@ -45,7 +45,6 @@ gather_genome_data:
    dir_fasta: output/2_genome_reference/fasta/        # output directory
    fasta: output/2_genome_reference/fasta/genome.fa   # genome fasta file, copied from snpeff database
    gff: output/2_genome_reference/gff/genome.gff      # genome gff file, copied from snpeff database
-   core: input/bed/Pf3D7_core_genome.bed              # bed file with core genome regions
    dict: output/2_genome_reference/fasta/genome.dict  # genome dict file, generated from genome fasta file
 
 
