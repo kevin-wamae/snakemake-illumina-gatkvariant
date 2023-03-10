@@ -107,13 +107,6 @@ rule all:
         expand(
             config["gatk_genotype_gvcfs"]["dir"] + "genotypes.vcf.gz", sample=SAMPLES
         ),
-        # # ------------------------------------
-        # # snpeff_annotate_vcf
-        # expand(config["snpEff"]["dir"] + "{sample}.vcf.gz", sample=SAMPLES),
-        # # ------------------------------------
-        # # snpsift_filter_vcf
-        # expand(config["snpSift"]["dir"] + "{sample}.allele.txt", sample=SAMPLES),
-        # expand(config["snpSift"]["dir"] + "{sample}.allele.freq.txt", sample=SAMPLES),
 
 
 # ######################################################################
@@ -331,7 +324,7 @@ rule samtools_view:
     input:
         bam=rules.gatk_markdup.output.bam,
         genome=rules.gather_genome_data.output.genome,
-        core_genome=config["gather_genome_data"]["core"],
+        core_genome=config["input"]["genome"]["core"],
     output:
         bam=config["samtools_view"]["dir"] + "{sample}.bam",
         index=config["samtools_view"]["dir"] + "{sample}.bam.bai",
@@ -422,7 +415,7 @@ rule gatk_haplotypecaller:
     input:
         bam=rules.samtools_view.output.bam,
         genome=rules.gather_genome_data.output.genome,
-        intervals=config["gather_genome_data"]["core"],
+        intervals=config["input"]["genome"]["core"],
     output:
         vcf=config["gatk_haplotypecaller"]["dir"] + "{sample}.vcf.gz",
     log:
@@ -450,7 +443,7 @@ rule gatk_genomics_db_import:
     input:
         vcf=expand(rules.gatk_haplotypecaller.output.vcf, sample=SAMPLES),
         genome=rules.gather_genome_data.output.genome,
-        intervals=config["gather_genome_data"]["core"],
+        intervals=config["input"]["genome"]["core"],
     output:
         dir=directory(config["gatk_genomicsdbimport"]["dir"]),
     log:
@@ -479,7 +472,7 @@ rule gatk_genotype_gvcfs:
     input:
         db=rules.gatk_genomics_db_import.output.dir,
         genome=rules.gather_genome_data.output.genome,
-        intervals=config["gather_genome_data"]["core"],
+        intervals=config["input"]["genome"]["core"],
     output:
         vcf=config["gatk_genotype_gvcfs"]["dir"] + "genotypes.vcf.gz",
     log:
