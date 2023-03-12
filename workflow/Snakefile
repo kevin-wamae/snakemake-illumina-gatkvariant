@@ -26,7 +26,7 @@
 # - 4e) rule samtools_view - filter reads occuring in the core genome and index the bam file
 # - 4f) rule samtools_idxstats - count reads in each chromosome
 # - 4g) rule samtools_flagstats - count reads in each chromosome
-# - 4h) rule gatk_collect_insert_size_metrics - collect insert size metrics
+# - 4h) rule gatk_insert_size_metrics - collect insert size metrics
 # - 4i) rule gatk_haplotypecaller - call variants
 
 # step 5 - variant calling
@@ -117,7 +117,7 @@ rule all:
             sample=SAMPLES,
         ),
         # ------------------------------------
-        # gatk_collect_insert_size_metrics
+        # gatk_insert_size_metrics
         expand(
             config["gatk_insert_size"]["dir_metrics"] + "{sample}.metrics.txt",
             sample=SAMPLES,
@@ -420,7 +420,7 @@ rule samtools_flagstat:
 
 # 4i) gatk CollectInsertSizeMetrics
 # *********************************************************************
-rule gatk_collect_insert_size_metrics:
+rule gatk_insert_size_metrics:
     input:
         bam=rules.samtools_view.output.bam,
         genome=rules.gather_genome_data.output.genome,
