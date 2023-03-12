@@ -5,33 +5,35 @@
 
 # table of contents
 # *********************************************************************
-## step 1 - output files
-#  1) rule all - gather all output files
+# step 1 - output files
+# - 1) rule all - gather all output files
 
-## step 2 - gather genome data
-#  2a) rule gather_genome_data - download and aggregate genome data
-#  2b) rule gatk_genome_dict - create genome dictionary
-#  2c) rule samtools_index - index genome fasta file
-#  2d) rule bedops_gff2bed - convert genome annotation gff to bed
+# step 2 - gather genome data
+# - 2a) rule gather_genome_data - download and aggregate genome data
+# - 2b) rule gatk_genome_dict - create genome dictionary
+# - 2c) rule samtools_index - index genome fasta file
+# - 2d) rule bedops_gff2bed - convert genome annotation gff to bed
 
-## step 3 - quality control
-#   3) rule trimmomatic - trim adapters and low quality bases
+# step 3 - quality control
+# -  3) rule trimmomatic - trim adapters and low quality bases
 
-## step 4 - map reads to genome
-#  4a) rule bwa_index - generate bwa genome-index files for mapping
-#  4b) rule bwa_mem - map reads to genome
-#  4c) rule gatk_clean - clean sam file (remove artifacts in SAM/BAM files)
-#  4d) rule gatk_sort - sort bam file
-#  4d) rule gatk_markdup - mark duplicates
-#  4e) rule samtools_view - filter reads occuring in the core genome and index the bam file
-#  4f) rule samtools_idxstats - count reads in each chromosome
-#  4g) rule samtools_flagstats - count reads in each chromosome
-#  4h) rule gatk_collect_insert_size_metrics - collect insert size metrics
-#  4i) rule gatk_haplotypecaller - call variants
+# step 4 - map reads to genome
+# - 4a) rule bwa_index - generate bwa genome-index files for mapping
+# - 4b) rule bwa_mem - map reads to genome
+# - 4c) rule gatk_clean - clean sam file (remove artifacts in SAM/BAM files)
+# - 4d) rule gatk_sort - sort bam file
+# - 4d) rule gatk_markdup - mark duplicates
+# - 4e) rule samtools_view - filter reads occuring in the core genome and index the bam file
+# - 4f) rule samtools_idxstats - count reads in each chromosome
+# - 4g) rule samtools_flagstats - count reads in each chromosome
+# - 4h) rule gatk_collect_insert_size_metrics - collect insert size metrics
+# - 4i) rule gatk_haplotypecaller - call variants
 
-## step 5 - variant calling
-#  5a) rule gatk_genomics_db_import - merge gVCFs into one genomic database
-#  5b) rule gatk_genotype_gvcfs - perform joint genotyping
+# step 5 - variant calling
+# - 5a) rule gatk_genomics_db_import - merge gVCFs into one genomic database
+# - 5b) make sample vcf map (python) - generate a map of sample names to vcf files
+# - 5c) gatk GenomicsDBImport - merge gVCFs into one genomic database
+# - 5d) gatk GenotypeGVCFs - perform joint genotyping
 
 
 # dependencies
@@ -48,7 +50,7 @@ configfile: "workflow/config.yaml"
 (SAMPLES,) = glob_wildcards(config["input"]["fastq"] + "{sample}_R1.fastq.gz")
 
 # ######################################################################
-#               step 1 - prepare a list of all output files
+#               STEP 1 - PREPARE A LIST OF ALL OUTPUT FILES
 # ######################################################################
 
 
@@ -134,18 +136,22 @@ rule all:
         expand(
             config["gatk_haplotypecaller"]["dir"] + "{sample}.vcf.gz", sample=SAMPLES
         ),
-        # # ------------------------------------
+        # ------------------------------------
+        # generate_sample_name_map
+        config["vcf_sample_name_map"]["tsv"],
+        # ------------------------------------
         # gatk_genomics_db_import
-        config["gatk_genomicsdbimport"]["dir"],
-        # # ------------------------------------
+        config["gatk_genomicsdb"]["dir"],
+        # ------------------------------------
         # gatk_genotype_gvcfs
         expand(
             config["gatk_genotype_gvcfs"]["dir"] + "genotypes.vcf.gz", sample=SAMPLES
         ),
+        # ------------------------------------
 
 
 # ######################################################################
-#                      step 2 - gather genome data
+#                      STEP 2 - GATHER GENOME DATA
 # ######################################################################
 
 
@@ -221,7 +227,7 @@ rule bedops_gff2bed:
 
 
 # ######################################################################
-#                        step 3 - quality control
+#                        STEP 3 - QUALITY CONTROL
 # ######################################################################
 
 
@@ -249,7 +255,7 @@ rule trimmomatic:
 
 
 # ######################################################################
-#                       step 4 - map reads to genome
+#                      STEP 4 - MAP READS TO GENOME
 # ######################################################################
 
 
@@ -440,11 +446,12 @@ rule gatk_collect_insert_size_metrics:
 
 
 # ######################################################################
-#                        step 5 - variant calling
+#                        STEP 5 - VARIANT CALLING
 # ######################################################################
 
 
 # 5a) gatk HaplotypeCaller - generate gVCFs
+# TODO: check that HaplotypeCaller is actually using these parameters
 # *********************************************************************
 rule gatk_haplotypecaller:
     input:
@@ -458,6 +465,8 @@ rule gatk_haplotypecaller:
     params:
         java_opts=config["gatk_java_opts"],
         threads=config["threads"],
+        erc=config["gatk_haplotypecaller"]["erc"],
+        extra=config["gatk_haplotypecaller"]["extra"],
     threads: config["threads"]
     conda:
         config["conda_env"]["gatk"]
@@ -465,6 +474,7 @@ rule gatk_haplotypecaller:
         """
         gatk {params.java_opts} HaplotypeCaller \
             --native-pair-hmm-threads {params.threads} \
+            --emit-ref-confidence {params.erc} \
             -R {input.genome} \
             -L {input.intervals} \
             -I {input.bam} \
@@ -472,20 +482,36 @@ rule gatk_haplotypecaller:
         """
 
 
-# 5b) gatk GenomicsDBImport - merge gVCFs into one genomic database
+# 5b) make sample vcf map (python) - generate a map of sample names to vcf files
+# *********************************************************************
+rule generate_sample_name_map:
+    input:
+        # while this is not used, it is required to make snakemake wait
+        # for the gVCFs to be generated
+        expand(rules.gatk_haplotypecaller.output.vcf, sample=SAMPLES),
+    params:
+        directory=config["gatk_haplotypecaller"]["dir"],
+    output:
+        config["vcf_sample_name_map"]["tsv"],
+    shell:
+        "python scripts/generate_sample_vcf_map.py {params.directory} {output}"
+
+
+# 5c) gatk GenomicsDBImport - merge gVCFs into one genomic database
 # *********************************************************************
 rule gatk_genomics_db_import:
     input:
-        vcf=expand(rules.gatk_haplotypecaller.output.vcf, sample=SAMPLES),
+        vcfs=expand(rules.gatk_haplotypecaller.output.vcf, sample=SAMPLES),
         genome=rules.gather_genome_data.output.genome,
         intervals=config["input"]["genome"]["core"],
+        sample_map=rules.generate_sample_name_map.output,
     output:
-        dir=directory(config["gatk_genomicsdbimport"]["dir"]),
+        dir=directory(config["gatk_genomicsdb"]["dir"]),
     log:
-        config["gatk_genomicsdbimport"]["dir"] + "genomicsdb.log",
+        config["gatk_genomicsdb"]["dir"] + "genomicsdb.log",
     params:
         java_opts=config["gatk_java_opts"],
-        extra=config["gatk_genomicsdbimport"]["extra"],
+        extra=config["gatk_genomicsdb"]["extra"],
         threads=config["threads"],
     threads: config["threads"]
     conda:
@@ -495,13 +521,13 @@ rule gatk_genomics_db_import:
         gatk {params.java_opts} GenomicsDBImport \
             {params.extra} \
             --reader-threads {params.threads} \
-            -V {input.vcf} \
             --genomicsdb-workspace-path {output.dir} \
+            --sample-name-map {input.sample_map} \
             -L {input.intervals}
         """
 
 
-# 18) gatk GenotypeGVCFs - perform joint genotyping
+# 5d) gatk GenotypeGVCFs - perform joint genotyping
 # *********************************************************************
 rule gatk_genotype_gvcfs:
     input:

@@ -14,7 +14,7 @@ conda_env:
 
 # number of threads to use, whenever possible
 # ----------------------------------------------------------------
-threads: 4  
+threads: 4  # replace '4' with the number of threads you want to use
 
 
 
@@ -87,7 +87,7 @@ trimmomatic:
 bwa:
    index: output/2_genome_reference/index/genome  # genome fasta file
    dir: output/4_mapped_reads/1_bwa/              # output directory
-   log: output/4_mapped_reads/1_bwa/log/          # log file
+   log: output/4_mapped_reads/1_bwa/log/          # log directory
 
 
 # gatk_clean
@@ -108,8 +108,8 @@ gatk_sort:
 # ----------------------------------------------------------------
 gatk_markdup:
    dir: output/4_mapped_reads/4_gatk_markdup/              # output directory
-   metrics: output/4_mapped_reads/4_gatk_markdup/metrics/  # output directory
-   log: output/4_mapped_reads/4_gatk_markdup/log/          # output directory
+   metrics: output/4_mapped_reads/4_gatk_markdup/metrics/  # metrics directory
+   log: output/4_mapped_reads/4_gatk_markdup/log/          # log directory
 
 
 
@@ -117,7 +117,7 @@ gatk_markdup:
 # ----------------------------------------------------------------
 samtools_view:
    dir: output/4_mapped_reads/5_samtools/      # output directory
-   log: output/4_mapped_reads/5_samtools/log/  # output directory
+   log: output/4_mapped_reads/5_samtools/log/  # log directory
 
 
 
@@ -147,17 +147,17 @@ gatk_insert_size:
 # gatk_java_opts - memory allocation for gatk tools
 # ----------------------------------------------------------------
 gatk_java_opts:   # replace '4' with the amaount of memory you want to use
-   - "--java-options '-Xmx4g -Xms4g'"     # maximum heap size  
+   - "--java-options '-Xmx4g -Xms4g'"   # maximum heap size  
 
 
 
 # gatk_haplotypecaller
 # ----------------------------------------------------------------
 gatk_haplotypecaller:
-   dir: output/5_variants/1_gatk_haplotypecaller/      # output directory
-   log: output/5_variants/1_gatk_haplotypecaller/log/  # output directory
-   extra:
-      - "--emit-ref-confidence GVCF"
+   dir: output/5_variant_calling/1_gatk_haplotypecaller/      # output directory
+   log: output/5_variant_calling/1_gatk_haplotypecaller/log/  # output directory
+   erc: GVCF                                                  # Possible values: {NONE, BP_RESOLUTION, GVCF}
+   extra:                                                     # extra options to pass to gatk
       - "--sample-ploidy 2"
       - "--assembly-region-padding 100"
       - "--max-num-haplotypes-in-population 128"
@@ -172,13 +172,15 @@ gatk_haplotypecaller:
       - "--base-quality-score-threshold 12"
 
 
-
 # gatk_genomics_db_import
 # ----------------------------------------------------------------
-gatk_genomicsdbimport:
-   dir: output/5_variants/2_gatk_genomicsdbimport/genomicsdb  # output directory
+vcf_sample_name_map:
+   tsv: output/5_variant_calling/2_gatk_genomicsdb/1_sample_map/sample_name_map.txt  # output directory
+
+
+gatk_genomicsdb:
+   dir: output/5_variant_calling/2_gatk_genomicsdb/2_genomicsdb  # output directory
    extra:
-      # - "--sample-name-map list.tsv"          # optional - uncomment and replace list.tsv. See gatk manual for details
       - "--batch-size 0"
       - "--genomicsdb-segment-size 1048576"
       - "--genomicsdb-vcf-buffer-size 16384"
@@ -188,8 +190,18 @@ gatk_genomicsdbimport:
 # gatk_genotype_gvcfs
 # ----------------------------------------------------------------
 gatk_genotype_gvcfs:
-   dir: output/5_variants/3_gatk_genotypeVCFs/  # output directory
+   dir: output/5_variant_calling/3_gatk_genotypeVCFs/  # output directory
    extra:
       - "--genomicsdb-use-bcf-codec false"
       - "-stand-call-conf 30.0"
       - "--max-genotype-count 1024"
+
+
+
+# gatk_variant_filtration
+# ----------------------------------------------------------------
+gatk_var_filtr:
+   dir: output/6_variants/1_gatk_variant_filtration/     # output directory
+   log: output/6_variants/1_gatk_variant_filtration/log  # log directory
+   filter_expr: "QD < 2.0 || FS > 60.0 || MQ < 40.0 || MQRankSum < -12.5 || ReadPosRankSum < -8.0 || SOR > 3.0"
+   filter_name: ["AB", "MQ"]
