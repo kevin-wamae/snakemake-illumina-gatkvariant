@@ -203,7 +203,7 @@ rule gatk_genome_dict:
     params:
         java_opts=config["gatk_java_opts"],
     conda:
-        config["conda_env"]["gatk"]
+        "env/gatk.yaml"
     shell:
         """
         gatk CreateSequenceDictionary \
@@ -220,7 +220,7 @@ rule samtools_index:
     output:
         config["samtools_index"]["fasta_idx"],
     conda:
-        config["conda_env"]["samtools"]
+        "env/samtools.yaml"
     shell:
         """
         samtools faidx {input}
@@ -237,7 +237,7 @@ rule bedops_gff2bed:
     params:
         feature=config["bedops_gff2bed"]["feature"],
     conda:
-        config["conda_env"]["bedops"]
+        "env/bedops.yaml"
     shell:
         """
         convert2bed --input=gff --output=bed < {input} | \
@@ -270,7 +270,7 @@ rule trimmomatic:
     log:
         config["trimmomatic"]["dir"] + "log/{sample}.log",
     conda:
-        config["conda_env"]["trimmomatic"]
+        "env/trimmomatic.yaml"
     shell:
         """
         trimmomatic PE \
@@ -296,7 +296,7 @@ rule bwa_index:
     output:
         index=touch(config["bwa"]["index"]),
     conda:
-        config["conda_env"]["bwa"]
+        "env/bwa.yaml"
     shell:
         """
         bwa index -p {output.index} {input.genome}
@@ -334,7 +334,7 @@ rule gatk_clean:
     params:
         java_opts=config["gatk_java_opts"],
     conda:
-        config["conda_env"]["gatk"]
+        "env/gatk.yaml"
     shell:
         """
         gatk {params.java_opts} CleanSam \
@@ -355,7 +355,7 @@ rule gatk_sort:
     params:
         java_opts=config["gatk_java_opts"],
     conda:
-        config["conda_env"]["gatk"]
+        "env/gatk.yaml"
     shell:
         """
         gatk {params.java_opts} SortSam \
@@ -369,6 +369,7 @@ rule gatk_sort:
 # 4e) gatk - mark duplicates
 # TODO: replace wrapper with shell command
 # TODO: compare performance with sambamba markdup
+# TODO: modify the java_opts input
 # *********************************************************************
 rule gatk_markdup:
     input:
@@ -380,7 +381,7 @@ rule gatk_markdup:
         config["gatk_markdup"]["log"] + "{sample}.log",
     params:
         extra="--remove-all-duplicates",
-        java_opts="",
+        # java_opts=config["gatk_java_opts"],
     threads: config["threads"]
     wrapper:
         "master/bio/gatk/markduplicatesspark"
@@ -400,7 +401,7 @@ rule samtools_view:
         config["samtools_view"]["log"] + "{sample}.log",
     threads: config["threads"]
     conda:
-        config["conda_env"]["samtools"]
+        "env/samtools.yaml"
     shell:
         """
         samtools view \
@@ -423,7 +424,7 @@ rule samtools_idxstats:
     output:
         config["samtools_stats"]["dir"] + "{sample}.bam.idxstats.txt",
     conda:
-        config["conda_env"]["samtools"]
+        "env/samtools.yaml"
     shell:
         """
         samtools idxstats {input} > {output}
@@ -438,11 +439,14 @@ rule samtools_flagstat:
     output:
         config["samtools_stats"]["dir"] + "{sample}.bam.flagstat.txt",
     conda:
-        config["conda_env"]["samtools"]
+        "env/samtools.yaml"
     shell:
         """
         samtools flagstat {input} > {output}
         """
+
+
+# TODO: add samtools stats and samtools depth
 
 
 # 4i) gatk CollectInsertSizeMetrics
@@ -460,7 +464,7 @@ rule gatk_insert_size_metrics:
         extra="",
         java_opts=config["gatk_java_opts"],
     conda:
-        config["conda_env"]["gatk"]
+        "env/gatk.yaml"
     shell:
         """
         gatk {params.java_opts} CollectInsertSizeMetrics \
@@ -495,12 +499,12 @@ rule gatk_haplotypecaller:
         extra=config["gatk_haplotypecaller"]["extra"],
     threads: config["threads"]
     conda:
-        config["conda_env"]["gatk"]
+        "env/gatk.yaml"
     shell:
         """
         gatk {params.java_opts} HaplotypeCaller \
             --native-pair-hmm-threads {threads} \
-            --emit-ref-confidence {params.erc} \
+            {params.extra} \
             -R {input.genome} \
             -L {input.intervals} \
             -I {input.bam} \
@@ -540,7 +544,7 @@ rule gatk_genomics_db_import:
         extra=config["gatk_genomicsdb"]["extra"],
     threads: config["threads"]
     conda:
-        config["conda_env"]["gatk"]
+        "env/gatk.yaml"
     shell:
         """
         gatk {params.java_opts} GenomicsDBImport \
@@ -568,7 +572,7 @@ rule gatk_genotype_gvcfs:
         java_opts=config["gatk_java_opts"],
         threads=config["threads"],
     conda:
-        config["conda_env"]["gatk"]
+        "env/gatk.yaml"
     shell:
         """
         gatk {params.java_opts} GenotypeGVCFs \
@@ -583,8 +587,6 @@ rule gatk_genotype_gvcfs:
 # ######################################################################
 #                       STEP 6 - VARIANT FILTERING
 # ######################################################################
-
-
 # 6a) gatk VariantFiltration - hard filter variants
 rule gatk_variant_filtration:
     input:
@@ -600,7 +602,7 @@ rule gatk_variant_filtration:
         filter_expr=config["gatk_var_filtr"]["filter_expr"],
         filter_name=config["gatk_var_filtr"]["filter_name"],
     conda:
-        config["conda_env"]["gatk"]
+        "env/gatk.yaml"
     shell:
         """
         gatk {params.java_opts} VariantFiltration \

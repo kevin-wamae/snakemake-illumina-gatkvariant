@@ -3,19 +3,9 @@
 # ################################################################
 
 
-# conda environment files
-conda_env:
-   bedops: env/bedops.yaml            # bedops
-   trimmomatic: env/trimmomatic.yaml  # trimmomatic
-   bwa: env/bwa.yaml                  # bwa
-   gatk: env/gatk.yaml                # gatk
-   samtools: env/samtools.yaml        # samtools
-
-
-
 # number of threads to use, whenever possible
 # ----------------------------------------------------------------
-threads: 4  # replace '4' with the number of threads you want to use
+threads: 6  # replace '4' with the number of threads you want to use
 
 
 
@@ -99,6 +89,7 @@ bwa:
    log: output/4_mapped_reads/1_bwa/log/          # log directory
 
 
+
 # gatk_clean
 # ----------------------------------------------------------------
 gatk_clean:
@@ -160,6 +151,7 @@ gatk_haplotypecaller:
    log: output/5_variant_calling/1_gatk_haplotypecaller/log/  # output directory
    erc: GVCF                                                  # Possible values: {NONE, BP_RESOLUTION, GVCF}
    extra:                                                     # extra options to pass to gatk
+      - "--emit-ref-confidence GVCF"
       - "--sample-ploidy 2"
       - "--assembly-region-padding 100"
       - "--max-num-haplotypes-in-population 128"
