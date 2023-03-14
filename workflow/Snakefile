@@ -168,6 +168,8 @@ rule all:
 #                      STEP 2 - GATHER GENOME DATA
 # ######################################################################
 
+# TODO: include a log file for each rule
+
 
 # 2a) genome data - download genome data
 # *********************************************************************
@@ -211,15 +213,18 @@ rule gatk_genome_dict:
 
 
 # 2c) samtools index - index genome fasta file
-# TODO: replace wrapper with shell command
 # *********************************************************************s
 rule samtools_index:
     input:
         rules.gather_genome_data.output.genome,
     output:
         config["samtools_index"]["fasta_idx"],
-    wrapper:
-        "master/bio/samtools/faidx"
+    conda:
+        config["conda_env"]["samtools"]
+    shell:
+        """
+        samtools faidx {input}
+        """
 
 
 # 2d) bedops - convert genome GFF to BED
@@ -248,7 +253,6 @@ rule bedops_gff2bed:
 # 3) trimmomatic - trim adapters and low quality bases
 # TODO: 1. add support for single end mode
 # TODO: 2. review the parameters
-# TODO: 3. replace wrapper with shell command
 # TODO: 4. switch to universal thread count from config file
 # *********************************************************************
 rule trimmomatic:
@@ -262,11 +266,21 @@ rule trimmomatic:
         r2_unpaired=config["trimmomatic"]["dir"] + "{sample}_R2.unpaired.fastq.gz",
     params:
         trimmer=config["trimmomatic"]["trimmer"],
-        extra=config["trimmomatic"]["extra"],
+    threads: config["threads"]
     log:
         config["trimmomatic"]["dir"] + "log/{sample}.log",
-    wrapper:
-        "master/bio/trimmomatic/pe"
+    conda:
+        config["conda_env"]["trimmomatic"]
+    shell:
+        """
+        trimmomatic PE \
+            -threads {threads} \
+            {input.r1} {input.r2} \
+            {output.r1} {output.r1_unpaired} \
+            {output.r2} {output.r2_unpaired} \
+            {params.trimmer} \
+            2> {log}
+        """
 
 
 # ######################################################################
@@ -290,7 +304,6 @@ rule bwa_index:
 
 
 # 4b) bwa mem - map reads to genome
-# TODO: replace wrapper with shell command
 # *********************************************************************
 rule bwa_mem:
     input:
@@ -305,8 +318,6 @@ rule bwa_mem:
         config["bwa"]["log"] + "{sample}.log",
     params:
         extra=r"-R '@RG\tID:{sample}\tSM:{sample}'",
-        sorting="none",
-        sort_extra="",  # Extra args for samtools/picard.
     threads: config["threads"]
     wrapper:
         "master/bio/bwa/mem"
@@ -370,7 +381,7 @@ rule gatk_markdup:
     params:
         extra="--remove-all-duplicates",
         java_opts="",
-    threads: 8
+    threads: config["threads"]
     wrapper:
         "master/bio/gatk/markduplicatesspark"
 
@@ -480,7 +491,6 @@ rule gatk_haplotypecaller:
         config["gatk_haplotypecaller"]["log"] + "{sample}.log",
     params:
         java_opts=config["gatk_java_opts"],
-        threads=config["threads"],
         erc=config["gatk_haplotypecaller"]["erc"],
         extra=config["gatk_haplotypecaller"]["extra"],
     threads: config["threads"]
@@ -489,7 +499,7 @@ rule gatk_haplotypecaller:
     shell:
         """
         gatk {params.java_opts} HaplotypeCaller \
-            --native-pair-hmm-threads {params.threads} \
+            --native-pair-hmm-threads {threads} \
             --emit-ref-confidence {params.erc} \
             -R {input.genome} \
             -L {input.intervals} \
@@ -528,7 +538,6 @@ rule gatk_genomics_db_import:
     params:
         java_opts=config["gatk_java_opts"],
         extra=config["gatk_genomicsdb"]["extra"],
-        threads=config["threads"],
     threads: config["threads"]
     conda:
         config["conda_env"]["gatk"]
@@ -536,7 +545,7 @@ rule gatk_genomics_db_import:
         """
         gatk {params.java_opts} GenomicsDBImport \
             {params.extra} \
-            --reader-threads {params.threads} \
+            --reader-threads {threads} \
             --genomicsdb-workspace-path {output.dir} \
             --sample-name-map {input.sample_map} \
             -L {input.intervals}
@@ -558,7 +567,6 @@ rule gatk_genotype_gvcfs:
         extra=config["gatk_genotype_gvcfs"]["extra"],
         java_opts=config["gatk_java_opts"],
         threads=config["threads"],
-    threads: config["threads"]
     conda:
         config["conda_env"]["gatk"]
     shell:

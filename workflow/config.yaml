@@ -5,16 +5,24 @@
 
 # conda environment files
 conda_env:
-   bedops: env/bedops.yaml      # bedops
-   bwa: env/bwa.yaml            # bwa
-   gatk: env/gatk.yaml          # gatk
-   samtools: env/samtools.yaml  # samtools
+   bedops: env/bedops.yaml            # bedops
+   trimmomatic: env/trimmomatic.yaml  # trimmomatic
+   bwa: env/bwa.yaml                  # bwa
+   gatk: env/gatk.yaml                # gatk
+   samtools: env/samtools.yaml        # samtools
 
 
 
 # number of threads to use, whenever possible
 # ----------------------------------------------------------------
 threads: 4  # replace '4' with the number of threads you want to use
+
+
+
+# gatk_java_opts - memory allocation for gatk tools
+# ----------------------------------------------------------------
+gatk_java_opts:   # replace '4' with the amaount of memory you want to use
+   - "--java-options '-Xmx4g -Xms4g'"   # maximum heap size
 
 
 
@@ -73,10 +81,8 @@ trimmomatic:
    trimmer:                      # See trimmomatic manual for adding additional options
       - "LEADING:3"
       - "TRAILING:3"
-      - "SLIDINGWINDOW:4:20"
+      - "SLIDINGWINDOW:4:15"
       - "MINLEN:36"
-   extra:                        # extra options to pass to trimmomatic
-      - "-threads 4"
 
 
 
@@ -145,13 +151,6 @@ gatk_insert_size:
 # ######################################################################
 #                        step 5 - variant calling
 # ######################################################################
-
-
-# gatk_java_opts - memory allocation for gatk tools
-# ----------------------------------------------------------------
-gatk_java_opts:   # replace '4' with the amaount of memory you want to use
-   - "--java-options '-Xmx4g -Xms4g'"   # maximum heap size  
-
 
 
 # gatk_haplotypecaller
