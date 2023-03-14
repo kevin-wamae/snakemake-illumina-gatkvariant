@@ -35,19 +35,31 @@
 # - 5c) gatk GenomicsDBImport - merge gVCFs into one genomic database
 # - 5d) gatk GenotypeGVCFs - perform joint genotyping
 
+# step 6 - variant filtering
+# 6a) gatk VariantFiltration - hard filter variants
 
-# dependencies
-# *********************************************************************
+
+# ######################################################################
+#                               DEPENDENCIES
+# ######################################################################
 # configuration file
 configfile: "workflow/config.yaml"
 
 
-# global wild cards of sample and matepair list
-# - this assumes that all fastq files have the SampleName_R1.fastq.gz and SampleName_R2.fastq.gz format
-# - If not, they might have the SampleName_S1_L001_R1_001.fastq.gz and SampleName_S1_L001_R2_001.fastq.gz format
-# - In this case, rename the files running the following command in your terminal, at the top level of the project:
-# python3 workflow/rename_fastq_files.py
+# start my generating a list of samples. This code assumes that all fastq files
+# have the format:
+#  - SampleName_R1.fastq.gz
+#  - SampleName_R2.fastq.gz
+
+# If not, they might have the format:
+#  - SampleName_S1_L001_R1_001.fastq.gz
+#  - SampleName_S1_L001_R2_001.fastq.gz
+
+# In this case, rename the files running the following python script in your terminal,
+# while at the top level of this project:
+#  - python3 workflow/fastq_rename.py
 (SAMPLES,) = glob_wildcards(config["input"]["fastq"] + "{sample}_R1.fastq.gz")
+
 
 # ######################################################################
 #               STEP 1 - PREPARE A LIST OF ALL OUTPUT FILES
@@ -148,6 +160,8 @@ rule all:
             config["gatk_genotype_gvcfs"]["dir"] + "genotypes.vcf.gz", sample=SAMPLES
         ),
         # ------------------------------------
+        # gatk_variant_filtration
+        config["gatk_var_filtr"]["dir"] + "filtered.vcf.gz",
 
 
 # ######################################################################
@@ -235,6 +249,7 @@ rule bedops_gff2bed:
 # TODO: 1. add support for single end mode
 # TODO: 2. review the parameters
 # TODO: 3. replace wrapper with shell command
+# TODO: 4. switch to universal thread count from config file
 # *********************************************************************
 rule trimmomatic:
     input:
@@ -342,6 +357,7 @@ rule gatk_sort:
 
 # 4e) gatk - mark duplicates
 # TODO: replace wrapper with shell command
+# TODO: compare performance with sambamba markdup
 # *********************************************************************
 rule gatk_markdup:
     input:
@@ -352,7 +368,7 @@ rule gatk_markdup:
     log:
         config["gatk_markdup"]["log"] + "{sample}.log",
     params:
-        extra="",
+        extra="--remove-all-duplicates",
         java_opts="",
     threads: 8
     wrapper:
@@ -552,5 +568,37 @@ rule gatk_genotype_gvcfs:
             -R {input.genome} \
             -V gendb://{input.db} \
             -L {input.intervals} \
+            -O {output.vcf}
+        """
+
+
+# ######################################################################
+#                       STEP 6 - VARIANT FILTERING
+# ######################################################################
+
+
+# 6a) gatk VariantFiltration - hard filter variants
+rule gatk_variant_filtration:
+    input:
+        vcf=rules.gatk_genotype_gvcfs.output.vcf,
+        genome=rules.gather_genome_data.output.genome,
+        intervals=config["input"]["genome"]["core"],
+    output:
+        vcf=config["gatk_var_filtr"]["dir"] + "filtered.vcf.gz",
+    log:
+        config["gatk_var_filtr"]["dir"] + "filtered.log",
+    params:
+        java_opts=config["gatk_java_opts"],
+        filter_expr=config["gatk_var_filtr"]["filter_expr"],
+        filter_name=config["gatk_var_filtr"]["filter_name"],
+    conda:
+        config["conda_env"]["gatk"]
+    shell:
+        """
+        gatk {params.java_opts} VariantFiltration \
+            --filter-expression "{params.filter_expr}" \
+            --filter-name "{params.filter_name}" \
+            -R {input.genome} \
+            -V {input.vcf} \
             -O {output.vcf}
         """

@@ -1,5 +1,5 @@
 # ################################################################
-#                          DEPENDENCIES
+#                        ADDTITONAL RESOURCES
 # ################################################################
 
 
@@ -31,8 +31,9 @@ input:
 
 
 # ################################################################
-#                      step 2 - gather genome data
+#                     step 2 - gather genome data
 # ################################################################
+
 
 # copy genomes files to output directory
 # ----------------------------------------------------------------
@@ -64,6 +65,7 @@ bedops_gff2bed:
 #                      step 3 - quality control
 # ################################################################
 
+
 # trimmomatic - clip illumina adapters, paired end mode
 # ----------------------------------------------------------------
 trimmomatic:
@@ -71,7 +73,7 @@ trimmomatic:
    trimmer:                      # See trimmomatic manual for adding additional options
       - "LEADING:3"
       - "TRAILING:3"
-      - "SLIDINGWINDOW:4:15"
+      - "SLIDINGWINDOW:4:20"
       - "MINLEN:36"
    extra:                        # extra options to pass to trimmomatic
       - "-threads 4"
@@ -81,6 +83,7 @@ trimmomatic:
 # ################################################################
 #                    step 4 - map reads to genome
 # ################################################################
+
 
 # bwa_mem
 # ----------------------------------------------------------------
@@ -172,10 +175,12 @@ gatk_haplotypecaller:
       - "--base-quality-score-threshold 12"
 
 
+
 # gatk_genomics_db_import
 # ----------------------------------------------------------------
 vcf_sample_name_map:
    tsv: output/5_variant_calling/2_gatk_genomicsdb/1_sample_map/sample_name_map.txt  # output directory
+
 
 
 gatk_genomicsdb:
@@ -198,10 +203,15 @@ gatk_genotype_gvcfs:
 
 
 
+# ######################################################################
+#                       step 6 - variant filtering
+# ######################################################################
+
+
 # gatk_variant_filtration
 # ----------------------------------------------------------------
 gatk_var_filtr:
    dir: output/6_variants/1_gatk_variant_filtration/     # output directory
    log: output/6_variants/1_gatk_variant_filtration/log  # log directory
-   filter_expr: "QD < 2.0 || FS > 60.0 || MQ < 40.0 || MQRankSum < -12.5 || ReadPosRankSum < -8.0 || SOR > 3.0"
-   filter_name: ["AB", "MQ"]
+   filter_expr: "QD < 2.0 || QUAL < 30.0 || FS > 60.0 || MQ < 60.0 || MQRankSum < -12.5 || ReadPosRankSum < -8.0 || SOR > 3.0"
+   filter_name: "FAIL"
