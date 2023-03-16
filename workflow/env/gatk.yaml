@@ -4,3 +4,4 @@ channels:
   - nodefaults
 dependencies:
   - gatk4=4.3.0.0
+  - r-base=4.2.3
