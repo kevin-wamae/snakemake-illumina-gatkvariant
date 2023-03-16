@@ -53,7 +53,9 @@
 
 ### **Where to start**
 
-- Install conda for your operating System: [Windows](https://docs.conda.io/projects/conda/en/latest/user-guide/install/windows.html), [MacOS](https://docs.conda.io/projects/conda/en/latest/user-guide/install/macos.html), [Linux](https://docs.conda.io/projects/conda/en/latest/user-guide/install/linux.html)
+- Install conda for your operating System:
+  - [Linux](https://docs.conda.io/projects/conda/en/latest/user-guide/install/linux.html)
+  - [MacOS](https://docs.conda.io/projects/conda/en/latest/user-guide/install/macos.html)
 - Clone this project using the following command in your terminal:
   - `git clone https://github.com/kevin-wamae/gatk-variant-calling-for-amplicons`
 - Type the following command in your terminal to navigate into the cloned directory using the command below. This will be the root directory of the project:
