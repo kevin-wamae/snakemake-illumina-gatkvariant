@@ -23,7 +23,6 @@
 # - 4a) rule bwa_index - generate bwa genome-index files for mapping
 # - 4b) rule bwa_mem - map reads to genome
 # - 4c) rule gatk_clean - clean sam file (remove artifacts in SAM/BAM files)
-# - 4d) rule gatk_sort - sort bam file
 # - 4d) rule gatk_markdup - mark duplicates
 # - 4e) rule samtools_view - filter reads occuring in the core genome and index the bam file
 # - 4f) rule samtools_idxstats - count reads in each chromosome
@@ -108,9 +107,6 @@ rule all:
         # gatk_clean
         expand(config["gatk_clean"]["dir"] + "{sample}.bam", sample=SAMPLES),
         # ------------------------------------
-        # gatk_sort
-        expand(config["gatk_sort"]["dir"] + "{sample}.bam", sample=SAMPLES),
-        # ------------------------------------
         # gatk_markdup
         expand(config["gatk_markdup"]["dir"] + "{sample}.bam", sample=SAMPLES),
         expand(
@@ -171,6 +167,7 @@ rule all:
 # ######################################################################
 
 # TODO: include a log file for each rule
+# TODO: include temp dir for scratch space
 
 
 # 2a) genome data - download genome data
@@ -208,7 +205,7 @@ rule gatk_genome_dict:
         "env/gatk.yaml"
     shell:
         """
-        gatk CreateSequenceDictionary \
+        gatk --java-options "{params.java_opts}" CreateSequenceDictionary \
         --REFERENCE {input.genome} \
         --OUTPUT {output.genome_dict}
         """
@@ -306,6 +303,7 @@ rule bwa_index:
 
 
 # 4b) bwa mem - map reads to genome
+# TODO: replace wrapper with shell command
 # *********************************************************************
 rule bwa_mem:
     input:
@@ -339,43 +337,20 @@ rule gatk_clean:
         "env/gatk.yaml"
     shell:
         """
-        gatk {params.java_opts} CleanSam \
+        gatk --java-options "{params.java_opts}" CleanSam \
             -R {input.genome} \
             -I {input.bam} \
             -O {output.clean}
         """
 
 
-# 4d) gatk - sort sam
-# *********************************************************************
-rule gatk_sort:
-    input:
-        bam=rules.gatk_clean.output.clean,
-        genome=rules.gather_genome_data.output.genome,
-    output:
-        sorted=config["gatk_sort"]["dir"] + "{sample}.bam",
-    params:
-        java_opts=config["gatk_java_opts"],
-    conda:
-        "env/gatk.yaml"
-    shell:
-        """
-        gatk {params.java_opts} SortSam \
-            -R {input.genome} \
-            -I {input.bam} \
-            -O {output.sorted} \
-            --SORT_ORDER coordinate
-        """
-
-
-# 4e) gatk - mark duplicates
+# 4d) gatk - mark duplicates
 # TODO: replace wrapper with shell command
 # TODO: compare performance with sambamba markdup
-# TODO: modify the java_opts input
 # *********************************************************************
 rule gatk_markdup:
     input:
-        bam=rules.gatk_sort.output.sorted,
+        bam=rules.gatk_clean.output.clean,
     output:
         bam=config["gatk_markdup"]["dir"] + "{sample}.bam",
         metrics=config["gatk_markdup"]["metrics"] + "{sample}.metrics.txt",
@@ -383,13 +358,13 @@ rule gatk_markdup:
         config["gatk_markdup"]["log"] + "{sample}.log",
     params:
         extra="--remove-all-duplicates",
-        # java_opts=config["gatk_java_opts"],
+        java_opts=config["gatk_java_opts"],
     threads: config["threads"]
     wrapper:
         "master/bio/gatk/markduplicatesspark"
 
 
-# 4f) samtools - filter reads occuring in the core genome and index the bam file
+# 4e) samtools - filter reads occuring in the core genome and index the bam file
 # *********************************************************************
 rule samtools_view:
     input:
@@ -418,7 +393,7 @@ rule samtools_view:
         """
 
 
-# 4g) samtools - idxstats (get mapping-quality statistics from BAM file)
+# 4f) samtools - idxstats (get mapping-quality statistics from BAM file)
 # *********************************************************************
 rule samtools_idxstats:
     input:
@@ -433,7 +408,7 @@ rule samtools_idxstats:
         """
 
 
-# 4h) samtools - flagstats (get mapping-quality statistics from BAM file)
+# 4g) samtools - flagstats (get mapping-quality statistics from BAM file)
 # *********************************************************************
 rule samtools_flagstat:
     input:
@@ -451,7 +426,7 @@ rule samtools_flagstat:
 # TODO: add samtools stats and samtools depth
 
 
-# 4i) gatk CollectInsertSizeMetrics
+# 4h) gatk CollectInsertSizeMetrics
 # *********************************************************************
 rule gatk_insert_size_metrics:
     input:
@@ -469,7 +444,7 @@ rule gatk_insert_size_metrics:
         "env/gatk.yaml"
     shell:
         """
-        gatk {params.java_opts} CollectInsertSizeMetrics \
+        gatk --java-options "{params.java_opts}" CollectInsertSizeMetrics \
             {params.extra} \
             -R {input.genome} \
             -I {input.bam} \
@@ -504,7 +479,7 @@ rule gatk_haplotypecaller:
         "env/gatk.yaml"
     shell:
         """
-        gatk {params.java_opts} HaplotypeCaller \
+        gatk --java-options "{params.java_opts}" HaplotypeCaller \
             --native-pair-hmm-threads {threads} \
             {params.extra} \
             -R {input.genome} \
@@ -549,7 +524,7 @@ rule gatk_genomics_db_import:
         "env/gatk.yaml"
     shell:
         """
-        gatk {params.java_opts} GenomicsDBImport \
+        gatk --java-options "{params.java_opts}" GenomicsDBImport \
             {params.extra} \
             --reader-threads {threads} \
             --genomicsdb-workspace-path {output.dir} \
@@ -577,7 +552,7 @@ rule gatk_genotype_gvcfs:
         "env/gatk.yaml"
     shell:
         """
-        gatk {params.java_opts} GenotypeGVCFs \
+        gatk --java-options "{params.java_opts}" GenotypeGVCFs \
             {params.extra} \
             -R {input.genome} \
             -V gendb://{input.db} \
@@ -589,8 +564,11 @@ rule gatk_genotype_gvcfs:
 # ######################################################################
 #                       STEP 6 - VARIANT FILTERING
 # ######################################################################
-# 6a) gatk VariantFiltration - hard filter variants
-rule gatk_variant_filtration:
+
+
+# 6a) gatk VariantFiltration - hard-filter variants
+# *********************************************************************
+rule gatk_variant_hard_filtr:
     input:
         vcf=rules.gatk_genotype_gvcfs.output.vcf,
         genome=rules.gather_genome_data.output.genome,
@@ -607,7 +585,7 @@ rule gatk_variant_filtration:
         "env/gatk.yaml"
     shell:
         """
-        gatk {params.java_opts} VariantFiltration \
+        gatk --java-options "{params.java_opts}" VariantFiltration \
             --filter-expression "{params.filter_expr}" \
             --filter-name "{params.filter_name}" \
             -R {input.genome} \

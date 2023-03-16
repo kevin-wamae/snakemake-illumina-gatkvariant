@@ -11,12 +11,11 @@ threads: 4  # replace '4' with the number of threads you want to use
 
 # gatk_java_opts - memory allocation for gatk tools
 # ----------------------------------------------------------------
-gatk_java_opts:   # replace '4' with the amaount of memory you want to use
-   - "--java-options '-Xmx4g -Xms4g'"   # maximum heap size
+gatk_java_opts:       # replace '4' with the amaount of memory you want to use
+   - "-Xmx4g -Xms4g"  # maximum heap size
 
 
-
-# fastq files, adapters and genome files
+# fastq files, adapters (if needed) and genome files
 # ----------------------------------------------------------------
 input:
    fastq: input/fastq/                                                    # raw fastq files
@@ -97,19 +96,15 @@ gatk_clean:
 
 
 
-# gatk_sort
-# ----------------------------------------------------------------
-gatk_sort:
-   dir: output/4_mapped_reads/3_gatk_sort/       # output directory
-
-
-
 # gatk_markdup
 # ----------------------------------------------------------------
 gatk_markdup:
    dir: output/4_mapped_reads/4_gatk_markdup/              # output directory
    metrics: output/4_mapped_reads/4_gatk_markdup/metrics/  # metrics directory
    log: output/4_mapped_reads/4_gatk_markdup/log/          # log directory
+   extra:
+      - "--remove-all-duplicates true"
+      - "--create-output-bam-index true"
 
 
 
