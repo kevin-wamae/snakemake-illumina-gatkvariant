@@ -110,29 +110,25 @@
 ### **Running the analysis**
 After navigating into the root directory of the project, run the analysis by executing the following commands in your terminal:
 
-1 - Create a conda analysis environment by running the following command in your terminal:
+1 - Create a conda analysis environment by running the command below in your terminal. This will create a conda environment named `variant-calling-gatk` and install snakemake in it. **_Note_:** You can replace `variant-calling-gatk` with any name you want
   - `conda create -n variant-calling-gatk snakemake `
-  - this will create a conda environment named `variant-calling-gatk` and install snakemake in it
-  - you can replace `variant-calling-gatk` with any name you want
   
-2 - Activate the conda environment:
+2 - Activate the conda environment by running the command below in your terminal. **_Note:_** This needs to be done every time you exit and restart your terminal and want re-run this pipeline
   - `conda activate variant-calling-gatk`
-  - _**Note**: This needs to be done every time you exit your terminal and want re-run this pipeline_:
 
-3 - Execute the following shell script to create the SnpEff and SnpSift database:
+3 - Execute the shell script below to create the SnpEff and SnpSift database. This will download the _P. falciparum_ genome data from [PlasmoDB](https://plasmodb.org/) and create a database in the **output/** directory. **_Note:_** This is an important step because the genome-FASTA and GFF files are required for read-mapping and variant calling.
   - `bash workflow/scripts/gather_genome_files.sh`
-  - This will download _P. falciparum_ data (genome FASTA, GENE and PROTEIN and GFF files) from [PlasmoDB](https://plasmodb.org/) and create a database in the **output/** directory
-  - Currently, the script downloads release-51 of the data, but it can be modified to download other [releases](https://plasmodb.org/common/downloads/) 
-  - This is an important step because the genome-FASTA and GFF files are also needed when running the pipeline
+
 
 3 - Finally, execute the whole Snakemake pipeline by running the following command in your terminal, replace **4** with the number of CPUs you wish to use and also remember to change the number of threads in the `config/config.yaml` file:
   - `snakemake --use-conda --cores 4`
 
-4 - After the analysis is complete, you can deactivate the conda environment by running the following command:
-  - `conda deactivate`
+4 - Look through the output files in the **output/** directory to see the results of the analysis
 
-5 - Look through the output files in the **output/** directory to see the results of the analysis
+5 - After the analysis is complete, you can deactivate the conda environment by running the following command to exit this conda environment:
+  - `conda deactivate variant-calling-gatk`
 
-to report any issues or bugs, please open an issue [here](https://github.com/kevin-wamae/gatk-variant-calling-for-amplicons/issues) or contact me via email: **wamaekevin[at]gmail.com**
+
+**Report any issues or bugs by openning an issue [here](https://github.com/kevin-wamae/gatk-variant-calling-for-amplicons/issues) or contact me via email (wamaekevin[at]gmail.com**)**
   
  
