@@ -2,6 +2,8 @@
 #   A Snakemake pipeline for variant calling from illumina sequences
 # #####################################################################
 
+# TODO: include snakemake reports - https://snakemake.readthedocs.io/en/v5.32.0/snakefiles/reporting.html#snakefiles-reports
+# TODO: abide by https://snakemake.readthedocs.io/en/v5.32.0/snakefiles/deployment.html#
 
 # table of contents
 # *********************************************************************
