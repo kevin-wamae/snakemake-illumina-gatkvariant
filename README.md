@@ -133,6 +133,6 @@ After navigating into the root directory of the project, run the analysis by exe
 
 5 - Look through the output files in the **output/** directory to see the results of the analysis
 
-to report any issues or bugs, please open an issue [here](https://github.com/kevin-wamae/gatk-variant-calling-for-amplicons/issues) or contact me via email: <span style="color:blue">wamaekevin[at]gmail.com</span>.
+to report any issues or bugs, please open an issue [here](https://github.com/kevin-wamae/gatk-variant-calling-for-amplicons/issues) or contact me via email: **wamaekevin[at]gmail.com**
   
  
