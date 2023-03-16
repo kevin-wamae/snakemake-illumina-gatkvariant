@@ -16,7 +16,8 @@
 
 
 - This repository contains a pipeline built with Snakemake for variant calling using Illumina-generated sequences and is based on the [GATK best practices](https://gatk.broadinstitute.org/hc/en-us/articles/360035535912-Data-pre-processing-for-variant-discovery) for variant calling.
-- Additionally, this pipeline aims to reproduce a recently published pipeline that optimized the GATK4 variant calling pipeline for _Plasmodium falciparum_ ([_preprint_](10.21203/rs.3.rs-2561857/v1))
+- Additionally, this pipeline aims to reproduce a recently published pipeline that optimized the GATK4 variant calling pipeline for _Plasmodium falciparum_ ([_preprint_](10.21203/rs.3.rs-2561857/v1)). However, this is not limited to _P. falciparum_ and can be used for any organism of interest.
+- **The pipeline implements VCF hard-filtering, instead of the recommended soft-filtering via Variant Quality Score Recalibration (VQSR), which will be implemented in a future release**.
 
 
 - The pipeline handles paired-end reads and uses the following tools:
@@ -27,13 +28,15 @@
 
   
 - The configuration file (`config/config.yaml`) specifies additional resources and can be modified to suit one's needs, such as:
-  - input files
-  - output directories, and
-  - parameters such as the number of threads to use
+  - Input files
+  - Output directories, and
+  - Other parameters, such as the number of threads to use
 
 - The pipeline also uses _`global_wildcards()`_ to match sample names and mates files in FastQ files present in the `input/`:
-  - "sample_R1.fastq.gz"=first mate
-  - "sample_R2.fastq.gz"=second mate
+  - "reads_R1.fastq.gz"=first mate
+  - "reads_R2.fastq.gz"=second mate
+  - If the user has a different naming convention (eg. [_this_](https://support.illumina.com/help/BaseSpace_OLH_009008/Content/Source/Informatics/BS/NamingConvention_FASTQ-files-swBS.htm)), they can rename the files using the `fastq_rename.py` script in the `scripts/` directory
+  - Therefore, the user can deposit their FastQ files in the `input/fastq/` directory or edit the `config/config.yaml` file to point to the correct directory and the pipeline will automatically match the sample names and mates files
 
 ---
 
