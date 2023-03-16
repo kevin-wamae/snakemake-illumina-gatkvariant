@@ -45,7 +45,7 @@
 #                               DEPENDENCIES
 # ######################################################################
 # configuration file
-configfile: "workflow/config.yaml"
+configfile: "config/config.yaml"
 
 
 # start my generating a list of samples. This code assumes that all fastq files
@@ -526,7 +526,7 @@ rule generate_sample_name_map:
     output:
         config["vcf_sample_name_map"]["tsv"],
     shell:
-        "python scripts/generate_sample_vcf_map.py {params.directory} {output}"
+        "python workflow/scripts/generate_sample_vcf_map.py {params.directory} {output}"
 
 
 # 5c) gatk GenomicsDBImport - merge gVCFs into one genomic database
