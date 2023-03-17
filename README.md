@@ -35,7 +35,7 @@
 - The pipeline also uses _`global_wildcards()`_ to match sample names and mates files in FastQ files present in the `input/`:
   - `reads_R1.fastq.gz` = first mate
   - `reads_R2.fastq.gz` = second mate
-  - If the user has a different naming convention (eg. [_this_](https://support.illumina.com/help/BaseSpace_OLH_009008/Content/Source/Informatics/BS/NamingConvention_FASTQ-files-swBS.htm)), they can rename the files using the `fastq_rename.py` script in the `scripts/` directory:
+  - If the user has a different naming convention (eg. [_this_](https://support.illumina.com/help/BaseSpace_OLH_009008/Content/Source/Informatics/BS/NamingConvention_FASTQ-files-swBS.htm)), they can rename the files by executing the python script in the _workflow/scripts/_ directory:
     - `python workflow/scripts/fastq_rename.py`
   - Therefore, the user can deposit their FastQ files in the `input/fastq/` directory or edit the `config/config.yaml` file to point to the correct directory and the pipeline will automatically match the sample names and mates files
 
