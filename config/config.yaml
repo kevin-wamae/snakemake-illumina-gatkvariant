@@ -200,7 +200,7 @@ gatk_var_filter_hard:
    dir: output/6_variants/1_gatk_variant_filtration/     # output directory
    log: output/6_variants/1_gatk_variant_filtration/log  # log directory
    extra:
-   -  '-filter "DP < 1000" --filter-name "DP1000"'
+   -  '-filter "DP < 10" --filter-name "DP10"'
    -  '-filter "QD < 2.0" --filter-name "QD2"'
    -  '-filter "QUAL < 30.0" --filter-name "QUAL30"'
    -  '-filter "SOR > 3.0" --filter-name "SOR3"'
