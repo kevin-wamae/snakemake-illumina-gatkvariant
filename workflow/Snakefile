@@ -159,7 +159,7 @@ rule all:
         ),
         # ------------------------------------
         # gatk_variant_filtration
-        config["gatk_var_filtr"]["dir"] + "filtered.vcf.gz",
+        config["gatk_var_filter_hard"]["dir"] + "filtered.vcf.gz",
 
 
 # ######################################################################
@@ -568,26 +568,24 @@ rule gatk_genotype_gvcfs:
 
 # 6a) gatk VariantFiltration - hard-filter variants
 # *********************************************************************
-rule gatk_variant_hard_filtr:
+rule gatk_var_filter_hard:
     input:
         vcf=rules.gatk_genotype_gvcfs.output.vcf,
         genome=rules.gather_genome_data.output.genome,
         intervals=config["input"]["genome"]["core"],
     output:
-        vcf=config["gatk_var_filtr"]["dir"] + "filtered.vcf.gz",
+        vcf=config["gatk_var_filter_hard"]["dir"] + "filtered.vcf.gz",
     log:
-        config["gatk_var_filtr"]["dir"] + "filtered.log",
+        config["gatk_var_filter_hard"]["dir"] + "filtered.log",
     params:
         java_opts=config["gatk_java_opts"],
-        filter_expr=config["gatk_var_filtr"]["filter_expr"],
-        filter_name=config["gatk_var_filtr"]["filter_name"],
+        extra=config["gatk_var_filter_hard"]["extra"],
     conda:
         "env/gatk.yaml"
     shell:
         """
         gatk --java-options "{params.java_opts}" VariantFiltration \
-            --filter-expression "{params.filter_expr}" \
-            --filter-name "{params.filter_name}" \
+            {params.extra} \
             -R {input.genome} \
             -V {input.vcf} \
             -O {output.vcf}
