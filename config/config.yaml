@@ -196,8 +196,15 @@ gatk_genotype_gvcfs:
 
 # gatk_variant_filtration
 # ----------------------------------------------------------------
-gatk_var_filtr:
+gatk_var_filter_hard:
    dir: output/6_variants/1_gatk_variant_filtration/     # output directory
    log: output/6_variants/1_gatk_variant_filtration/log  # log directory
-   filter_expr: "QD < 2.0 || QUAL < 30.0 || FS > 60.0 || MQ < 60.0 || MQRankSum < -12.5 || ReadPosRankSum < -8.0 || SOR > 3.0"
-   filter_name: "FAIL"
+   extra:
+   -  '-filter "DP < 10" --filter-name "DP10"'
+   -  '-filter "QD < 2.0" --filter-name "QD2"'
+   -  '-filter "QUAL < 30.0" --filter-name "QUAL30"'
+   -  '-filter "SOR > 3.0" --filter-name "SOR3"'
+   -  '-filter "FS > 60.0" --filter-name "FS60"'
+   -  '-filter "MQ < 40.0" --filter-name "MQ40"'
+   -  '-filter "MQRankSum < -12.5" --filter-name "MQRankSum-12.5"'
+   -  '-filter "ReadPosRankSum < -8.0" --filter-name "ReadPosRankSum-8"'
