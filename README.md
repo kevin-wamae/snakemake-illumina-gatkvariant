@@ -15,7 +15,7 @@
 ### **Motivation**
 
 
-- This repository contains a pipeline built with Snakemake for variant calling using Illumina-generated sequences and is based on the [GATK best practices](https://gatk.broadinstitute.org/hc/en-us/articles/360035535912-Data-pre-processing-for-variant-discovery) for variant calling.
+- This repository contains a pipeline built with [Snakemake](https://snakemake.readthedocs.io/en/stable/) for variant calling using Illumina-generated sequences and is based on the [GATK best practices](https://gatk.broadinstitute.org/hc/en-us/articles/360035535912-Data-pre-processing-for-variant-discovery) for variant calling.
 - Additionally, this pipeline aims to reproduce a recently published pipeline that optimized the GATK4 variant calling pipeline for _Plasmodium falciparum_ ([_preprint_](10.21203/rs.3.rs-2561857/v1)). However, this is not limited to _P. falciparum_ and can be used for any organism of interest.
 - **The pipeline implements VCF hard-filtering, instead of the recommended soft-filtering via Variant Quality Score Recalibration (VQSR), which will be implemented in a future release**.
 
@@ -57,9 +57,9 @@
   - [Linux](https://docs.conda.io/projects/conda/en/latest/user-guide/install/linux.html)
   - [MacOS](https://docs.conda.io/projects/conda/en/latest/user-guide/install/macos.html)
 - Clone this project using the following command in your terminal:
-  - `git clone https://github.com/kevin-wamae/gatk-variant-calling-for-amplicons`
+  - `git clone https://github.com/kevin-wamae/gatk-variant-calling-hard-filter.git`
 - Type the following command in your terminal to navigate into the cloned directory using the command below. This will be the root directory of the project:
-  - `cd gatk-variant-calling-for-amplicons`
+  - `cd gatk-variant-calling-hard-filter`
   
 - **_Note: All subsequent commands should be run from the root directory of this project. However, users can modify the scripts to their liking_**
  
@@ -110,8 +110,8 @@
 ### **Running the analysis**
 After navigating into the root directory of the project, run the analysis by executing the following commands in your terminal:
 
-1 - Create a conda analysis environment by running the command below in your terminal. This will create a conda environment named `variant-calling-gatk` and install snakemake in it. **_Note_:** You can replace `variant-calling-gatk` with any name you want
-  - `conda create -n variant-calling-gatk snakemake `
+1 - Create a conda analysis environment by running the command below in your terminal. This will create a conda environment named `variant-calling-gatk` and install [Snakemake](https://snakemake.readthedocs.io/en/stable/) and [SnpEff](https://pcingola.github.io/SnpEff/se_introduction/) in it:
+  - `conda env create --file workflow/env/variant-calling-gatk.yml`
   
 2 - Activate the conda environment by running the command below in your terminal. **_Note:_** This needs to be done every time you exit and restart your terminal and want re-run this pipeline
   - `conda activate variant-calling-gatk`
@@ -129,6 +129,6 @@ After navigating into the root directory of the project, run the analysis by exe
   - `conda deactivate variant-calling-gatk`
 
 
-**Report any issues or bugs by openning an issue [here](https://github.com/kevin-wamae/gatk-variant-calling-for-amplicons/issues) or contact me via email (wamaekevin[at]gmail.com**)**
+**Report any issues or bugs by openning an issue [here](https://github.com/kevin-wamae/gatk-variant-calling-for-amplicons/issues) or contact me via email (wamaekevin[at]gmail.com)**
   
  

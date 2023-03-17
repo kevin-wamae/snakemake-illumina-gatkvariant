@@ -1,0 +1,6 @@
+name: variant-calling-gatk
+channels:
+  - bioconda
+dependencies:
+  - snakemake>=7.24.0
+  - snpeff=5.1
