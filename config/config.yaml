@@ -63,16 +63,21 @@ bedops_gff2bed:
 # ################################################################
 
 
-# trimmomatic - clip illumina adapters, paired end mode
+# trimmomatic/fastp - clip illumina adapters, paired end mode
 # ----------------------------------------------------------------
-trimmomatic:
-   dir: output/3_trimmed_fastq/  # output directory
-   trimmer:                      # See trimmomatic manual for adding additional options
+trim_reads:
+   dir: output/3_trimmed_fastq/                                           # output directory
+   trimmer: "fastp"                                                       # trimmer to use, options: {trimmomatic, fastp}
+   extra_trimmomatic:                                                     # See trimmomatic manual for adding additional options
       - "LEADING:3"
       - "TRAILING:3"
       - "SLIDINGWINDOW:4:15"
       - "MINLEN:36"
-
+   extra_fastp:                                                           # See fastp manual for adding additional options
+      - "--cut_tail --cut_tail_mean_quality 20 --cut_tail_window_size 4"  # cut tail options
+      - "--qualified_quality_phred 15"                                    # quality filter options
+      - "--length_required 15"                                            # discard reads shorter than this
+      - "--length_limit 0"                                                # discard reads longer than this, 0 means no limit
 
 
 # ################################################################
@@ -208,7 +213,7 @@ gatk_var_filter_hard:
    dir: output/6_variants/2_gatk_variants_filtered/     # output directory
    log: output/6_variants/2_gatk_variants_filtered/log  # log directory
    extra_snps:
-   - '-filter "DP < 500" --filter-name "DP500"'
+   - '-filter "DP < 10" --filter-name "DP10"'
    - '-filter "QD < 2.0" --filter-name "QD2"'
    - '-filter "QUAL < 30.0" --filter-name "QUAL30"'
    - '-filter "SOR > 3.0" --filter-name "SOR3"'
@@ -217,7 +222,7 @@ gatk_var_filter_hard:
    - '-filter "MQRankSum < -12.5" --filter-name "MQRankSum-12.5"'
    - '-filter "ReadPosRankSum < -8.0" --filter-name "ReadPosRankSum-8"'
    extra_indels:
-   - '-filter "DP < 500" --filter-name "DP500"'
+   - '-filter "DP < 10 --filter-name "DP10"'
    - '-filter "QD < 2.0" --filter-name "QD2"'
    - '-filter "QUAL < 30.0" --filter-name "QUAL30"'
    - '-filter "FS > 200.0" --filter-name "FS200"'

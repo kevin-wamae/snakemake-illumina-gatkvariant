@@ -75,15 +75,21 @@ rule all:
         # bedops_gff2bed
         config["bedops_gff2bed"]["bed"],
         # ------------------------------------
-        # trimmomaticS,
-        expand(config["trimmomatic"]["dir"] + "{sample}_R1.fastq.gz", sample=SAMPLES),
-        expand(config["trimmomatic"]["dir"] + "{sample}_R2.fastq.gz", sample=SAMPLES),
+        # trimmomatic/fastp,
         expand(
-            config["trimmomatic"]["dir"] + "{sample}_R1.unpaired.fastq.gz",
+            config["trim_reads"]["dir"] + "{sample}_R1.trimmed.fastq.gz",
             sample=SAMPLES,
         ),
         expand(
-            config["trimmomatic"]["dir"] + "{sample}_R2.unpaired.fastq.gz",
+            config["trim_reads"]["dir"] + "{sample}_R2.trimmed.fastq.gz",
+            sample=SAMPLES,
+        ),
+        expand(
+            config["trim_reads"]["dir"] + "{sample}_R1.unpaired.fastq.gz",
+            sample=SAMPLES,
+        ),
+        expand(
+            config["trim_reads"]["dir"] + "{sample}_R2.unpaired.fastq.gz",
             sample=SAMPLES,
         ),
         # ------------------------------------
@@ -243,41 +249,61 @@ rule bedops_gff2bed:
 # ######################################################################
 
 
-# 3) trimmomatic - trim adapters and low quality bases
+# 3) trimmomatic/fastp - trim adapters and low quality bases
 # *********************************************************************
-rule trimmomatic:
+rule trim_reads:
     input:
         r1=config["input"]["fastq"] + "{sample}_R1.fastq.gz",
         r2=config["input"]["fastq"] + "{sample}_R2.fastq.gz",
     output:
-        r1=config["trimmomatic"]["dir"] + "{sample}_R1.fastq.gz",
-        r2=config["trimmomatic"]["dir"] + "{sample}_R2.fastq.gz",
-        r1_unpaired=config["trimmomatic"]["dir"] + "{sample}_R1.unpaired.fastq.gz",
-        r2_unpaired=config["trimmomatic"]["dir"] + "{sample}_R2.unpaired.fastq.gz",
+        r1=config["trim_reads"]["dir"] + "{sample}_R1.trimmed.fastq.gz",
+        r2=config["trim_reads"]["dir"] + "{sample}_R2.trimmed.fastq.gz",
+        r1_unpaired=config["trim_reads"]["dir"] + "{sample}_R1.unpaired.fastq.gz",
+        r2_unpaired=config["trim_reads"]["dir"] + "{sample}_R2.unpaired.fastq.gz",
     params:
-        trimmer=config["trimmomatic"]["trimmer"],
+        trimmer=config["trim_reads"]["trimmer"],
+        opts_trimmomatic=config["trim_reads"]["extra_trimmomatic"],
+        opts_fastp=config["trim_reads"]["extra_fastp"],
     threads: config["threads"]
     log:
-        config["trimmomatic"]["dir"] + "log/{sample}.log",
+        log=config["trim_reads"]["dir"] + "log/{sample}.log",
+        json=config["trim_reads"]["dir"] + "log/{sample}.json",
+        html=config["trim_reads"]["dir"] + "log/{sample}.html",
     conda:
-        "env/trimmomatic.yaml"
+        "env/trimmomatic.yaml" if config["trim_reads"][
+        "trimmer"
+        ] == "trimmomatic" else "env/fastp.yaml"
     shell:
         """
-        trimmomatic PE \
-            -threads {threads} \
-            {input.r1} {input.r2} \
-            {output.r1} {output.r1_unpaired} \
-            {output.r2} {output.r2_unpaired} \
-            {params.trimmer} \
-            2> {log}
+        if [[ "{params.trimmer}" == "fastp" ]]; then
+            fastp \
+                --thread {threads} \
+                {params.opts_fastp} \
+                --in1 {input.r1} \
+                --in2 {input.r2} \
+                --out1 {output.r1} \
+                --out2 {output.r2} \
+                --unpaired1 {output.r1_unpaired} \
+                --unpaired2 {output.r2_unpaired} \
+                --json {log.json} \
+                --html {log.html} \
+                --detect_adapter_for_pe \
+                length_required=15
+        else
+            trimmomatic PE \
+                -threads {threads} \
+                {input.r1} {input.r2} \
+                {output.r1} {output.r1_unpaired} \
+                {output.r2} {output.r2_unpaired} \
+                {params.opts_trimmomatic} \
+                -trimlog {log.log}
+        fi
         """
 
 
 # ######################################################################
 #                      STEP 4 - MAP READS TO GENOME
 # ######################################################################
-
-
 # 4a) bwa - generate bwa genome-index files for mapping
 # *********************************************************************
 rule bwa_index:
@@ -299,8 +325,8 @@ rule bwa_index:
 rule bwa_mem:
     input:
         reads=[
-            rules.trimmomatic.output.r1,
-            rules.trimmomatic.output.r2,
+            rules.trim_reads.output.r1,
+            rules.trim_reads.output.r2,
         ],
         idx=rules.bwa_index.output,
     output:
@@ -415,8 +441,6 @@ rule samtools_flagstat:
 
 
 # TODO: add samtools stats and samtools depth
-
-
 # 4h) gatk CollectInsertSizeMetrics
 # *********************************************************************
 rule gatk_insert_size_metrics:
@@ -447,8 +471,6 @@ rule gatk_insert_size_metrics:
 # ######################################################################
 #                        STEP 5 - VARIANT CALLING
 # ######################################################################
-
-
 # 5a) gatk HaplotypeCaller - call SNPs and indels via local re-assembly of haplotypes
 # *********************************************************************
 rule gatk_haplotypecaller:
@@ -554,8 +576,6 @@ rule gatk_genotype_gvcfs:
 # ######################################################################
 #                      STEP 6 - VARIANT FILTERING
 # ######################################################################
-
-
 # 6a) gatk VariantSeparate - separate snps and indels
 # *********************************************************************
 rule gatk_var_split_variants:
@@ -579,7 +599,6 @@ rule gatk_var_split_variants:
             -V {input.vcf} \
             -O {output.snps} \
             --select-type-to-include SNP
-
         gatk --java-options "{params.java_opts}" SelectVariants \
             -R {input.genome} \
             -V {input.vcf} \
@@ -614,7 +633,6 @@ rule gatk_var_filter_hard:
             -R {input.genome} \
             -V {input.snps} \
             -O {output.snps}
-        
         gatk --java-options "{params.java_opts}" VariantFiltration \
             {params.extra_indels} \
             -R {input.genome} \
