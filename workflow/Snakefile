@@ -17,29 +17,29 @@
 # - 2d) rule bedops_gff2bed - convert genome annotation gff to bed
 
 # step 3 - quality control
-# -  3) rule trimmomatic - trim adapters and low quality bases
+# -  3) rule trim_reads - trim adapters and low quality bases
 
 # step 4 - map reads to genome
 # - 4a) rule bwa_index - generate bwa genome-index files for mapping
 # - 4b) rule bwa_mem - map reads to genome
 # - 4c) rule gatk_clean - clean sam file (remove artifacts in SAM/BAM files)
-# - 4d) rule gatk_markdup - mark duplicates
+# - 4d) rule gatk_markdup - mark duplicate reads
 # - 4e) rule samtools_view - filter reads occuring in the core genome and index the bam file
 # - 4f) rule samtools_idxstats - count reads in each chromosome
 # - 4g) rule samtools_flagstats - count reads in each chromosome
 # - 4h) rule gatk_insert_size_metrics - collect insert size metrics
-# - 4i) rule gatk_haplotypecaller - call variants
 
 # step 5 - variant calling
 # - 5a) rule gatk_haplotypecaller - call snps and indels via local re-assembly of haplotypes
 # - 5b) rule generate_sample_name_map - generate a map of sample names to vcf files
 # - 5c) rule gatk_genomics_db_import - merge gVCFs into one genomic database
-# - 5d) rule gatk_gatk_genotype_gvcfs - perform joint genotyping
+# - 5d) rule gatk_genotype_gvcfs - perform joint genotyping
 
 # step 6 - variant filtering
-# 6a) gatk VariantSeparate - separate snps and indels
-# 6b) gatk VariantFiltrationHard - snps and indels
-# 6c) gatk MergeVcfs - merge snps and indels
+# 6a) rule gatk_split_variants - separate snps and indels
+# 6b) rule gatk_filter_hard - snps and indels
+# 6c) rule gatk_merge_vcfs - merge snps and indels
+# 6d) rule gatk_filter_pass - exlude variants that failed filters
 
 
 # ######################################################################
@@ -155,16 +155,19 @@ rule all:
             config["gatk_genotype_gvcfs"]["dir"] + "genotypes.vcf.gz", sample=SAMPLES
         ),
         # ------------------------------------
-        # gatk_var_split_variants
+        # gatk_split_variants
         config["gatk_var_split"]["dir"] + "snps.vcf.gz",
         config["gatk_var_split"]["dir"] + "indels.vcf.gz",
         # ------------------------------------
         # gatk_variant_filtration
-        config["gatk_var_filter_hard"]["dir"] + "snps_filtered.vcf.gz",
-        config["gatk_var_filter_hard"]["dir"] + "indels_filtered.vcf.gz",
+        config["gatk_filter_hard"]["dir"] + "snps_filtered.vcf.gz",
+        config["gatk_filter_hard"]["dir"] + "indels_filtered.vcf.gz",
         # ------------------------------------
         # gatk_merge_vcfs
         config["gatk_merge_vcfs"]["dir"] + "merged.vcf.gz",
+        # ------------------------------------
+        # gatk_variant_annotator
+        config["gatk_filter_pass"]["dir"] + "pass.vcf.gz",
 
 
 # ######################################################################
@@ -385,7 +388,7 @@ rule gatk_clean:
         """
 
 
-# 4d) gatk - mark duplicates
+# 4d) gatk MarkDuplicatesSpark - mark duplicate reads
 # TODO: replace wrapper with shell command
 # TODO: compare performance with sambamba markdup
 # *********************************************************************
@@ -405,7 +408,7 @@ rule gatk_markdup:
         "master/bio/gatk/markduplicatesspark"
 
 
-# 4e) samtools - filter reads occuring in the core genome and index the bam file
+# 4e) samtools view - filter reads occuring in the core genome and index the bam file
 # *********************************************************************
 rule samtools_view:
     input:
@@ -438,7 +441,7 @@ rule samtools_view:
         """
 
 
-# 4f) samtools - idxstats (get mapping-quality statistics from BAM file)
+# 4f) samtools idxstats - (get mapping-quality statistics from BAM file)
 # *********************************************************************
 rule samtools_idxstats:
     input:
@@ -457,7 +460,7 @@ rule samtools_idxstats:
         """
 
 
-# 4g) samtools - flagstats (get mapping-quality statistics from BAM file)
+# 4g) samtools flagstats - (get mapping-quality statistics from BAM file)
 # *********************************************************************
 rule samtools_flagstat:
     input:
@@ -639,8 +642,9 @@ rule gatk_genotype_gvcfs:
 
 
 # 6a) gatk VariantSeparate - separate snps and indels
+# TODO: consider seleting mixed sites and multiallelic sites
 # *********************************************************************
-rule gatk_var_split_variants:
+rule gatk_split_variants:
     input:
         vcf=rules.gatk_genotype_gvcfs.output.vcf,
         genome=rules.gather_genome_data.output.genome,
@@ -649,8 +653,8 @@ rule gatk_var_split_variants:
         snps=config["gatk_var_split"]["dir"] + "snps.vcf.gz",
         indels=config["gatk_var_split"]["dir"] + "indels.vcf.gz",
     log:
-        snps=config["gatk_var_split"]["dir"] + "log/snps.log",
-        indels=config["gatk_var_split"]["dir"] + "log/indels.log",
+        snps=config["gatk_var_split"]["dir"] + "snps.log",
+        indels=config["gatk_var_split"]["dir"] + "indels.log",
     params:
         java_opts=config["gatk_java_opts"],
     conda:
@@ -678,22 +682,22 @@ rule gatk_var_split_variants:
 
 # 6b) gatk VariantFiltrationHard - snps and indels
 # *********************************************************************
-rule gatk_var_filter_hard:
+rule gatk_filter_hard:
     input:
-        snps=rules.gatk_var_split_variants.output.snps,
-        indels=rules.gatk_var_split_variants.output.indels,
+        snps=rules.gatk_split_variants.output.snps,
+        indels=rules.gatk_split_variants.output.indels,
         genome=rules.gather_genome_data.output.genome,
         intervals=config["input"]["genome"]["core"],
     output:
-        snps=config["gatk_var_filter_hard"]["dir"] + "snps_filtered.vcf.gz",
-        indels=config["gatk_var_filter_hard"]["dir"] + "indels_filtered.vcf.gz",
+        snps=config["gatk_filter_hard"]["dir"] + "snps_filtered.vcf.gz",
+        indels=config["gatk_filter_hard"]["dir"] + "indels_filtered.vcf.gz",
     log:
-        snps=config["gatk_var_filter_hard"]["dir"] + "log/snps.log",
-        indels=config["gatk_var_filter_hard"]["dir"] + "log/indels.log",
+        snps=config["gatk_filter_hard"]["dir"] + "snps.log",
+        indels=config["gatk_filter_hard"]["dir"] + "indels.log",
     params:
         java_opts=config["gatk_java_opts"],
-        extra_snps=config["gatk_var_filter_hard"]["extra_indels"],
-        extra_indels=config["gatk_var_filter_hard"]["extra_indels"],
+        extra_snps=config["gatk_filter_hard"]["extra_indels"],
+        extra_indels=config["gatk_filter_hard"]["extra_indels"],
     conda:
         "env/gatk.yaml"
     shell:
@@ -722,8 +726,8 @@ rule gatk_var_filter_hard:
 # *********************************************************************
 rule gatk_merge_vcfs:
     input:
-        snps=rules.gatk_var_filter_hard.output.snps,
-        indels=rules.gatk_var_filter_hard.output.indels,
+        snps=rules.gatk_filter_hard.output.snps,
+        indels=rules.gatk_filter_hard.output.indels,
     output:
         vcf=config["gatk_merge_vcfs"]["dir"] + "merged.vcf.gz",
     log:
@@ -741,5 +745,31 @@ rule gatk_merge_vcfs:
             -I {input.snps} \
             -I {input.indels} \
             -O {output.vcf} \
+            2> {log}
+        """
+
+
+# 6d) gatk FilterPassVariants - exlude variants that failed filters
+# *********************************************************************
+rule gatk_filter_pass:
+    input:
+        vcf=rules.gatk_merge_vcfs.output.vcf,
+    output:
+        vcf=config["gatk_filter_pass"]["dir"] + "pass.vcf.gz",
+    log:
+        config["gatk_filter_pass"]["dir"] + "pass.log",
+    params:
+        java_opts=config["gatk_java_opts"],
+    conda:
+        "env/gatk.yaml"
+    shell:
+        """
+        echo "##############################################"
+        echo "-------   Running gatk FilterVcfPass   -------"
+        echo "##############################################"
+        gatk --java-options "{params.java_opts}" SelectVariants \
+            -V {input.vcf} \
+            -O {output.vcf} \
+            --exclude-filtered \
             2> {log}
         """

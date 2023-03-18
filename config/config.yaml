@@ -195,14 +195,14 @@ gatk_genotype_gvcfs:
 # gatk_variant_separate
 # ----------------------------------------------------------------
 gatk_var_split:
-   dir: output/6_variants/1_gatk_variants_split/     # output directory
+   dir: output/6_variant_filtering/1_gatk_variants_split/     # output directory
 
 
 
 # gatk_variant_filtration
 # ----------------------------------------------------------------
-gatk_var_filter_hard:
-   dir: output/6_variants/2_gatk_variants_filtered/     # output directory
+gatk_filter_hard:
+   dir: output/6_variant_filtering/2_gatk_variants_filtered/     # output directory
    extra_snps:
    - '-filter "DP < 10" --filter-name "DP10"'
    - '-filter "QD < 2.0" --filter-name "QD2"'
@@ -224,5 +224,12 @@ gatk_var_filter_hard:
 # gatk_variant_filtration
 # ----------------------------------------------------------------
 gatk_merge_vcfs:
-   dir: output/6_variants/3_gatk_variants_merged/     # output directory
-   log: output/6_variants/3_gatk_variants_merged/log  # log directory
+   dir: output/6_variant_filtering/3_gatk_variants_merged/     # output directory
+   log: output/6_variant_filtering/3_gatk_variants_merged/log  # log directory
+
+
+
+# gatk_filter_pass
+# ----------------------------------------------------------------
+gatk_filter_pass:
+   dir: output/6_variant_filtering/4_gatk_variants_pass/  # output directory
