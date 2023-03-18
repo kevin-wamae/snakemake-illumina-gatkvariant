@@ -222,7 +222,7 @@ gatk_var_filter_hard:
    - '-filter "MQRankSum < -12.5" --filter-name "MQRankSum-12.5"'
    - '-filter "ReadPosRankSum < -8.0" --filter-name "ReadPosRankSum-8"'
    extra_indels:
-   - '-filter "DP < 10 --filter-name "DP10"'
+   - '-filter "DP < 10" --filter-name "DP10"'
    - '-filter "QD < 2.0" --filter-name "QD2"'
    - '-filter "QUAL < 30.0" --filter-name "QUAL30"'
    - '-filter "FS > 200.0" --filter-name "FS200"'
@@ -230,3 +230,8 @@ gatk_var_filter_hard:
 
 
 
+# gatk_variant_filtration
+# ----------------------------------------------------------------
+gatk_merge_vcfs:
+   dir: output/6_variants/3_gatk_variants_merged/     # output directory
+   log: output/6_variants/3_gatk_variants_merged/log  # log directory

@@ -37,7 +37,9 @@
 # - 5d) rule gatk_gatk_genotype_gvcfs - perform joint genotyping
 
 # step 6 - variant filtering
-# 6a) gatk VariantFiltration - hard filter variants
+# 6a) gatk VariantSeparate - separate snps and indels
+# 6b) gatk VariantFiltrationHard - snps and indels
+# 6c) gatk MergeVcfs - merge snps and indels
 
 
 # ######################################################################
@@ -160,11 +162,15 @@ rule all:
         # gatk_variant_filtration
         config["gatk_var_filter_hard"]["dir"] + "snps_filtered.vcf.gz",
         config["gatk_var_filter_hard"]["dir"] + "indels_filtered.vcf.gz",
+        # ------------------------------------
+        # gatk_merge_vcfs
+        config["gatk_merge_vcfs"]["dir"] + "merged.vcf.gz",
 
 
 # ######################################################################
 #                      STEP 2 - GATHER GENOME DATA
 # ######################################################################
+
 
 # TODO: include a log file for each rule
 # TODO: include temp dir for scratch space
@@ -304,6 +310,8 @@ rule trim_reads:
 # ######################################################################
 #                      STEP 4 - MAP READS TO GENOME
 # ######################################################################
+
+
 # 4a) bwa - generate bwa genome-index files for mapping
 # *********************************************************************
 rule bwa_index:
@@ -471,6 +479,8 @@ rule gatk_insert_size_metrics:
 # ######################################################################
 #                        STEP 5 - VARIANT CALLING
 # ######################################################################
+
+
 # 5a) gatk HaplotypeCaller - call SNPs and indels via local re-assembly of haplotypes
 # *********************************************************************
 rule gatk_haplotypecaller:
@@ -576,6 +586,8 @@ rule gatk_genotype_gvcfs:
 # ######################################################################
 #                      STEP 6 - VARIANT FILTERING
 # ######################################################################
+
+
 # 6a) gatk VariantSeparate - separate snps and indels
 # *********************************************************************
 rule gatk_var_split_variants:
@@ -638,4 +650,28 @@ rule gatk_var_filter_hard:
             -R {input.genome} \
             -V {input.indels} \
             -O {output.indels}
+        """
+
+
+# 6c) gatk MergeVcfs - merge snps and indels
+# *********************************************************************
+rule gatk_merge_vcfs:
+    input:
+        snps=rules.gatk_var_filter_hard.output.snps,
+        indels=rules.gatk_var_filter_hard.output.indels,
+    output:
+        vcf=config["gatk_merge_vcfs"]["dir"] + "merged.vcf.gz",
+    log:
+        config["gatk_merge_vcfs"]["dir"] + "merged.log",
+    params:
+        java_opts=config["gatk_java_opts"],
+    conda:
+        "env/gatk.yaml"
+    shell:
+        """
+        gatk --java-options "{params.java_opts}" MergeVcfs \
+            -I {input.snps} \
+            -I {input.indels} \
+            -O {output.vcf} \
+            2> {log}
         """
