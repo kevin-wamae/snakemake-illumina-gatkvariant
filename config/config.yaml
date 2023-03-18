@@ -184,7 +184,7 @@ gatk_genotype_gvcfs:
    dir: output/5_variant_calling/3_gatk_genotypeVCFs/  # output directory
    extra:
       - "--genomicsdb-use-bcf-codec false"
-      - "--standard-min-confidence-threshold-for-calling 30.0"
+      - "--standard-min-confidence-threshold-for-calling 10.0"
       - "--max-genotype-count 1024"
 
 
@@ -194,17 +194,34 @@ gatk_genotype_gvcfs:
 # ######################################################################
 
 
+# gatk_variant_separate
+# ----------------------------------------------------------------
+gatk_var_split:
+   dir: output/6_variants/1_gatk_variants_split/     # output directory
+   log: output/6_variants/1_gatk_variants_split/log  # log directory
+
+
+
 # gatk_variant_filtration
 # ----------------------------------------------------------------
 gatk_var_filter_hard:
-   dir: output/6_variants/1_gatk_variant_filtration/     # output directory
-   log: output/6_variants/1_gatk_variant_filtration/log  # log directory
-   extra:
-   -  '-filter "DP < 10" --filter-name "DP10"'
-   -  '-filter "QD < 2.0" --filter-name "QD2"'
-   -  '-filter "QUAL < 30.0" --filter-name "QUAL30"'
-   -  '-filter "SOR > 3.0" --filter-name "SOR3"'
-   -  '-filter "FS > 60.0" --filter-name "FS60"'
-   -  '-filter "MQ < 40.0" --filter-name "MQ40"'
-   -  '-filter "MQRankSum < -12.5" --filter-name "MQRankSum-12.5"'
-   -  '-filter "ReadPosRankSum < -8.0" --filter-name "ReadPosRankSum-8"'
+   dir: output/6_variants/2_gatk_variants_filtered/     # output directory
+   log: output/6_variants/2_gatk_variants_filtered/log  # log directory
+   extra_snps:
+   - '-filter "DP < 500" --filter-name "DP500"'
+   - '-filter "QD < 2.0" --filter-name "QD2"'
+   - '-filter "QUAL < 30.0" --filter-name "QUAL30"'
+   - '-filter "SOR > 3.0" --filter-name "SOR3"'
+   - '-filter "FS > 60.0" --filter-name "FS60"'
+   - '-filter "MQ < 40.0" --filter-name "MQ40"'
+   - '-filter "MQRankSum < -12.5" --filter-name "MQRankSum-12.5"'
+   - '-filter "ReadPosRankSum < -8.0" --filter-name "ReadPosRankSum-8"'
+   extra_indels:
+   - '-filter "DP < 500" --filter-name "DP500"'
+   - '-filter "QD < 2.0" --filter-name "QD2"'
+   - '-filter "QUAL < 30.0" --filter-name "QUAL30"'
+   - '-filter "FS > 200.0" --filter-name "FS200"'
+   - '-filter "ReadPosRankSum < -20.0" --filter-name "ReadPosRankSum-20"'
+
+
+

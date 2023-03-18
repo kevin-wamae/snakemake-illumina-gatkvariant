@@ -31,10 +31,10 @@
 # - 4i) rule gatk_haplotypecaller - call variants
 
 # step 5 - variant calling
-# - 5a) rule gatk_genomics_db_import - merge gVCFs into one genomic database
-# - 5b) make sample vcf map (python) - generate a map of sample names to vcf files
-# - 5c) gatk GenomicsDBImport - merge gVCFs into one genomic database
-# - 5d) gatk GenotypeGVCFs - perform joint genotyping
+# - 5a) rule gatk_haplotypecaller - call snps and indels via local re-assembly of haplotypes
+# - 5b) rule generate_sample_name_map - generate a map of sample names to vcf files
+# - 5c) rule gatk_genomics_db_import - merge gVCFs into one genomic database
+# - 5d) rule gatk_gatk_genotype_gvcfs - perform joint genotyping
 
 # step 6 - variant filtering
 # 6a) gatk VariantFiltration - hard filter variants
@@ -47,18 +47,7 @@
 configfile: "config/config.yaml"
 
 
-# start my generating a list of samples. This code assumes that all fastq files
-# have the format:
-#  - SampleName_R1.fastq.gz
-#  - SampleName_R2.fastq.gz
-
-# If not, they might have the format:
-#  - SampleName_S1_L001_R1_001.fastq.gz
-#  - SampleName_S1_L001_R2_001.fastq.gz
-
-# In this case, rename the files running the following python script in your terminal,
-# while at the top level of this project:
-#  - python3 workflow/fastq_rename.py
+# generate a list of sample names
 (SAMPLES,) = glob_wildcards(config["input"]["fastq"] + "{sample}_R1.fastq.gz")
 
 
@@ -158,8 +147,13 @@ rule all:
             config["gatk_genotype_gvcfs"]["dir"] + "genotypes.vcf.gz", sample=SAMPLES
         ),
         # ------------------------------------
+        # gatk_var_split_variants
+        config["gatk_var_split"]["dir"] + "snps.vcf.gz",
+        config["gatk_var_split"]["dir"] + "indels.vcf.gz",
+        # ------------------------------------
         # gatk_variant_filtration
-        config["gatk_var_filter_hard"]["dir"] + "filtered.vcf.gz",
+        config["gatk_var_filter_hard"]["dir"] + "snps_filtered.vcf.gz",
+        config["gatk_var_filter_hard"]["dir"] + "indels_filtered.vcf.gz",
 
 
 # ######################################################################
@@ -215,14 +209,14 @@ rule gatk_genome_dict:
 # *********************************************************************s
 rule samtools_index:
     input:
-        rules.gather_genome_data.output.genome,
+        genome=rules.gather_genome_data.output.genome,
     output:
-        config["samtools_index"]["fasta_idx"],
+        index=config["samtools_index"]["fasta_idx"],
     conda:
         "env/samtools.yaml"
     shell:
         """
-        samtools faidx {input}
+        samtools faidx {input.genome}
         """
 
 
@@ -230,9 +224,9 @@ rule samtools_index:
 # *********************************************************************
 rule bedops_gff2bed:
     input:
-        rules.gather_genome_data.output.gff,
+        gff=rules.gather_genome_data.output.gff,
     output:
-        config["bedops_gff2bed"]["bed"],
+        bed=config["bedops_gff2bed"]["bed"],
     params:
         feature=config["bedops_gff2bed"]["feature"],
     conda:
@@ -250,9 +244,6 @@ rule bedops_gff2bed:
 
 
 # 3) trimmomatic - trim adapters and low quality bases
-# TODO: 1. add support for single end mode
-# TODO: 2. review the parameters
-# TODO: 4. switch to universal thread count from config file
 # *********************************************************************
 rule trimmomatic:
     input:
@@ -313,7 +304,7 @@ rule bwa_mem:
         ],
         idx=rules.bwa_index.output,
     output:
-        config["bwa"]["dir"] + "{sample}.bam",
+        bam=config["bwa"]["dir"] + "{sample}.bam",
     log:
         config["bwa"]["log"] + "{sample}.log",
     params:
@@ -327,10 +318,10 @@ rule bwa_mem:
 # *********************************************************************
 rule gatk_clean:
     input:
-        bam=rules.bwa_mem.output,
+        bam=rules.bwa_mem.output.bam,
         genome=rules.gather_genome_data.output.genome,
     output:
-        clean=config["gatk_clean"]["dir"] + "{sample}.bam",
+        bam=config["gatk_clean"]["dir"] + "{sample}.bam",
     params:
         java_opts=config["gatk_java_opts"],
     conda:
@@ -340,7 +331,7 @@ rule gatk_clean:
         gatk --java-options "{params.java_opts}" CleanSam \
             -R {input.genome} \
             -I {input.bam} \
-            -O {output.clean}
+            -O {output.bam}
         """
 
 
@@ -350,7 +341,7 @@ rule gatk_clean:
 # *********************************************************************
 rule gatk_markdup:
     input:
-        bam=rules.gatk_clean.output.clean,
+        bam=rules.gatk_clean.output.bam,
     output:
         bam=config["gatk_markdup"]["dir"] + "{sample}.bam",
         metrics=config["gatk_markdup"]["metrics"] + "{sample}.metrics.txt",
@@ -397,14 +388,14 @@ rule samtools_view:
 # *********************************************************************
 rule samtools_idxstats:
     input:
-        rules.samtools_view.output.bam,
+        bam=rules.samtools_view.output.bam,
     output:
-        config["samtools_stats"]["dir"] + "{sample}.bam.idxstats.txt",
+        idxstats=config["samtools_stats"]["dir"] + "{sample}.bam.idxstats.txt",
     conda:
         "env/samtools.yaml"
     shell:
         """
-        samtools idxstats {input} > {output}
+        samtools idxstats {input.bam} > {output.idxstats}
         """
 
 
@@ -412,14 +403,14 @@ rule samtools_idxstats:
 # *********************************************************************
 rule samtools_flagstat:
     input:
-        rules.samtools_view.output.bam,
+        bam=rules.samtools_view.output.bam,
     output:
-        config["samtools_stats"]["dir"] + "{sample}.bam.flagstat.txt",
+        flagstat=config["samtools_stats"]["dir"] + "{sample}.bam.flagstat.txt",
     conda:
         "env/samtools.yaml"
     shell:
         """
-        samtools flagstat {input} > {output}
+        samtools flagstat {input.bam} > {output.flagstat}
         """
 
 
@@ -458,8 +449,7 @@ rule gatk_insert_size_metrics:
 # ######################################################################
 
 
-# 5a) gatk HaplotypeCaller - generate gVCFs
-# TODO: check that HaplotypeCaller is actually using these parameters
+# 5a) gatk HaplotypeCaller - call SNPs and indels via local re-assembly of haplotypes
 # *********************************************************************
 rule gatk_haplotypecaller:
     input:
@@ -562,31 +552,72 @@ rule gatk_genotype_gvcfs:
 
 
 # ######################################################################
-#                       STEP 6 - VARIANT FILTERING
+#                      STEP 6 - VARIANT FILTERING
 # ######################################################################
 
 
-# 6a) gatk VariantFiltration - hard-filter variants
+# 6a) gatk VariantSeparate - separate snps and indels
 # *********************************************************************
-rule gatk_var_filter_hard:
+rule gatk_var_split_variants:
     input:
         vcf=rules.gatk_genotype_gvcfs.output.vcf,
         genome=rules.gather_genome_data.output.genome,
         intervals=config["input"]["genome"]["core"],
     output:
-        vcf=config["gatk_var_filter_hard"]["dir"] + "filtered.vcf.gz",
+        snps=config["gatk_var_split"]["dir"] + "snps.vcf.gz",
+        indels=config["gatk_var_split"]["dir"] + "indels.vcf.gz",
+    log:
+        config["gatk_var_split"]["log"] + "separate.log",
+    params:
+        java_opts=config["gatk_java_opts"],
+    conda:
+        "env/gatk.yaml"
+    shell:
+        """
+        gatk --java-options "{params.java_opts}" SelectVariants \
+            -R {input.genome} \
+            -V {input.vcf} \
+            -O {output.snps} \
+            --select-type-to-include SNP
+
+        gatk --java-options "{params.java_opts}" SelectVariants \
+            -R {input.genome} \
+            -V {input.vcf} \
+            -O {output.indels} \
+            --select-type-to-include INDEL
+        """
+
+
+# 6b) gatk VariantFiltrationHard - snps and indels
+# *********************************************************************
+rule gatk_var_filter_hard:
+    input:
+        snps=rules.gatk_var_split_variants.output.snps,
+        indels=rules.gatk_var_split_variants.output.indels,
+        genome=rules.gather_genome_data.output.genome,
+        intervals=config["input"]["genome"]["core"],
+    output:
+        snps=config["gatk_var_filter_hard"]["dir"] + "snps_filtered.vcf.gz",
+        indels=config["gatk_var_filter_hard"]["dir"] + "indels_filtered.vcf.gz",
     log:
         config["gatk_var_filter_hard"]["dir"] + "filtered.log",
     params:
         java_opts=config["gatk_java_opts"],
-        extra=config["gatk_var_filter_hard"]["extra"],
+        extra_snps=config["gatk_var_filter_hard"]["extra_indels"],
+        extra_indels=config["gatk_var_filter_hard"]["extra_indels"],
     conda:
         "env/gatk.yaml"
     shell:
         """
         gatk --java-options "{params.java_opts}" VariantFiltration \
-            {params.extra} \
+            {params.extra_snps} \
             -R {input.genome} \
-            -V {input.vcf} \
-            -O {output.vcf}
+            -V {input.snps} \
+            -O {output.snps}
+        
+        gatk --java-options "{params.java_opts}" VariantFiltration \
+            {params.extra_indels} \
+            -R {input.genome} \
+            -V {input.indels} \
+            -O {output.indels}
         """
