@@ -79,19 +79,19 @@ rule all:
         # ------------------------------------
         # trimmomatic/fastp,
         expand(
-            config["trim_reads"]["dir"] + "{sample}_R1.trimmed.fastq.gz",
+            config["trim_reads"]["dir"] + "paired/{sample}_R1.trimmed.fastq.gz",
             sample=SAMPLES,
         ),
         expand(
-            config["trim_reads"]["dir"] + "{sample}_R2.trimmed.fastq.gz",
+            config["trim_reads"]["dir"] + "paired/{sample}_R2.trimmed.fastq.gz",
             sample=SAMPLES,
         ),
         expand(
-            config["trim_reads"]["dir"] + "{sample}_R1.unpaired.fastq.gz",
+            config["trim_reads"]["dir"] + "unpaired/{sample}_R1.unpaired.fastq.gz",
             sample=SAMPLES,
         ),
         expand(
-            config["trim_reads"]["dir"] + "{sample}_R2.unpaired.fastq.gz",
+            config["trim_reads"]["dir"] + "unpaired/{sample}_R2.unpaired.fastq.gz",
             sample=SAMPLES,
         ),
         # ------------------------------------
@@ -126,11 +126,11 @@ rule all:
         # ------------------------------------
         # gatk_insert_size_metrics
         expand(
-            config["gatk_insert_size"]["dir_metrics"] + "{sample}.metrics.txt",
+            config["gatk_insert_size"]["dir"] + "metrics/{sample}.metrics.txt",
             sample=SAMPLES,
         ),
         expand(
-            config["gatk_insert_size"]["dir_histogram"] + "{sample}.histogram.pdf",
+            config["gatk_insert_size"]["dir"] + "histogram/{sample}.histogram.pdf",
             sample=SAMPLES,
         ),
         # ------------------------------------
@@ -172,8 +172,7 @@ rule all:
 # ######################################################################
 
 
-# TODO: include a log file for each rule
-# TODO: include temp dir for scratch space
+# TODO: include temp dir (e.g  scratch space) for gatk tools
 
 
 # 2a) genome data - download genome data
@@ -212,8 +211,8 @@ rule gatk_genome_dict:
     shell:
         """
         gatk --java-options "{params.java_opts}" CreateSequenceDictionary \
-        --REFERENCE {input.genome} \
-        --OUTPUT {output.genome_dict}
+            --REFERENCE {input.genome} \
+            --OUTPUT {output.genome_dict}
         """
 
 
@@ -262,25 +261,31 @@ rule trim_reads:
         r1=config["input"]["fastq"] + "{sample}_R1.fastq.gz",
         r2=config["input"]["fastq"] + "{sample}_R2.fastq.gz",
     output:
-        r1=config["trim_reads"]["dir"] + "{sample}_R1.trimmed.fastq.gz",
-        r2=config["trim_reads"]["dir"] + "{sample}_R2.trimmed.fastq.gz",
-        r1_unpaired=config["trim_reads"]["dir"] + "{sample}_R1.unpaired.fastq.gz",
-        r2_unpaired=config["trim_reads"]["dir"] + "{sample}_R2.unpaired.fastq.gz",
+        r1=config["trim_reads"]["dir"] + "paired/{sample}_R1.trimmed.fastq.gz",
+        r2=config["trim_reads"]["dir"] + "paired/{sample}_R2.trimmed.fastq.gz",
+        r1_unpaired=config["trim_reads"]["dir"]
+        + "unpaired/{sample}_R1.unpaired.fastq.gz",
+        r2_unpaired=config["trim_reads"]["dir"]
+        + "unpaired/{sample}_R2.unpaired.fastq.gz",
     params:
         trimmer=config["trim_reads"]["trimmer"],
         opts_trimmomatic=config["trim_reads"]["extra_trimmomatic"],
         opts_fastp=config["trim_reads"]["extra_fastp"],
     threads: config["threads"]
     log:
-        log=config["trim_reads"]["dir"] + "log/{sample}.log",
-        json=config["trim_reads"]["dir"] + "log/{sample}.json",
-        html=config["trim_reads"]["dir"] + "log/{sample}.html",
+        log=config["trim_reads"]["dir"] + "log/trimmomatic/{sample}.log",
+        json=config["trim_reads"]["dir"] + "log/fastp/{sample}.json",
+        html=config["trim_reads"]["dir"] + "log/fastp/{sample}.html",
     conda:
         "env/trimmomatic.yaml" if config["trim_reads"][
         "trimmer"
         ] == "trimmomatic" else "env/fastp.yaml"
     shell:
         """
+        echo "##############################################"
+        echo "------    Running Trimmomatic/Fastp    ------"
+        echo "##############################################"
+
         if [[ "{params.trimmer}" == "fastp" ]]; then
             fastp \
                 --thread {threads} \
@@ -323,6 +328,10 @@ rule bwa_index:
         "env/bwa.yaml"
     shell:
         """
+        echo "##############################################"
+        echo "-----------    Running BWA Mem    -----------"
+        echo "##############################################"
+
         bwa index -p {output.index} {input.genome}
         """
 
@@ -340,7 +349,7 @@ rule bwa_mem:
     output:
         bam=config["bwa"]["dir"] + "{sample}.bam",
     log:
-        config["bwa"]["log"] + "{sample}.log",
+        config["bwa"]["dir"] + "log/{sample}.log",
     params:
         extra=r"-R '@RG\tID:{sample}\tSM:{sample}'",
     threads: config["threads"]
@@ -356,16 +365,23 @@ rule gatk_clean:
         genome=rules.gather_genome_data.output.genome,
     output:
         bam=config["gatk_clean"]["dir"] + "{sample}.bam",
+    log:
+        config["gatk_clean"]["dir"] + "log/{sample}.log",
     params:
         java_opts=config["gatk_java_opts"],
     conda:
         "env/gatk.yaml"
     shell:
         """
+        echo "##############################################"
+        echo "--------    Running gatk CleanSam    --------"
+        echo "##############################################"
+
         gatk --java-options "{params.java_opts}" CleanSam \
             -R {input.genome} \
             -I {input.bam} \
-            -O {output.bam}
+            -O {output.bam} \
+            2> {log}
         """
 
 
@@ -380,7 +396,7 @@ rule gatk_markdup:
         bam=config["gatk_markdup"]["dir"] + "{sample}.bam",
         metrics=config["gatk_markdup"]["metrics"] + "{sample}.metrics.txt",
     log:
-        config["gatk_markdup"]["log"] + "{sample}.log",
+        config["gatk_markdup"]["dir"] + "log/{sample}.log",
     params:
         extra="--remove-all-duplicates",
         java_opts=config["gatk_java_opts"],
@@ -400,20 +416,24 @@ rule samtools_view:
         bam=config["samtools_view"]["dir"] + "{sample}.bam",
         index=config["samtools_view"]["dir"] + "{sample}.bam.bai",
     log:
-        config["samtools_view"]["log"] + "{sample}.log",
+        config["samtools_view"]["dir"] + "log/{sample}.log",
     threads: config["threads"]
     conda:
         "env/samtools.yaml"
     shell:
         """
+        echo "##############################################"
+        echo "--------    Running Samtools View    --------"
+        echo "##############################################"
+
         samtools view \
             -b \
             -h \
-            -@ {threads} \
-            -T {input.genome} \
+            --threads {threads} \
+            --reference {input.genome} \
             -L {input.core_genome} \
             {input.bam} \
-            > {output.bam}
+            > {output.bam} 2> {log}
         samtools index {output.bam} {output.index}
         """
 
@@ -429,6 +449,10 @@ rule samtools_idxstats:
         "env/samtools.yaml"
     shell:
         """
+        echo "##############################################"
+        echo "------    Running Samtools IdxStats    ------"
+        echo "##############################################"
+
         samtools idxstats {input.bam} > {output.idxstats}
         """
 
@@ -444,6 +468,10 @@ rule samtools_flagstat:
         "env/samtools.yaml"
     shell:
         """
+        echo "##############################################"
+        echo "------    Running Samtools Flagstat    ------"
+        echo "##############################################"
+
         samtools flagstat {input.bam} > {output.flagstat}
         """
 
@@ -456,10 +484,10 @@ rule gatk_insert_size_metrics:
         bam=rules.samtools_view.output.bam,
         genome=rules.gather_genome_data.output.genome,
     output:
-        metrics=config["gatk_insert_size"]["dir_metrics"] + "{sample}.metrics.txt",
-        histogram=config["gatk_insert_size"]["dir_histogram"] + "{sample}.histogram.pdf",
+        metrics=config["gatk_insert_size"]["dir"] + "metrics/{sample}.metrics.txt",
+        histogram=config["gatk_insert_size"]["dir"] + "histogram/{sample}.histogram.pdf",
     log:
-        config["gatk_insert_size"]["log"] + "{sample}.log",
+        config["gatk_insert_size"]["dir"] + "log/{sample}.log",
     params:
         extra="",
         java_opts=config["gatk_java_opts"],
@@ -467,12 +495,17 @@ rule gatk_insert_size_metrics:
         "env/gatk.yaml"
     shell:
         """
+        echo "##############################################"
+        echo "--  Running gatk CollectInsertSizeMetrics  --"
+        echo "##############################################"
+
         gatk --java-options "{params.java_opts}" CollectInsertSizeMetrics \
             {params.extra} \
             -R {input.genome} \
             -I {input.bam} \
             -O {output.metrics} \
-            -H {output.histogram}
+            -H {output.histogram} \
+            2> {log}
         """
 
 
@@ -491,7 +524,7 @@ rule gatk_haplotypecaller:
     output:
         vcf=config["gatk_haplotypecaller"]["dir"] + "{sample}.vcf.gz",
     log:
-        config["gatk_haplotypecaller"]["log"] + "{sample}.log",
+        config["gatk_haplotypecaller"]["dir"] + "log/{sample}.log",
     params:
         java_opts=config["gatk_java_opts"],
         erc=config["gatk_haplotypecaller"]["erc"],
@@ -501,13 +534,18 @@ rule gatk_haplotypecaller:
         "env/gatk.yaml"
     shell:
         """
+        echo "##############################################"
+        echo "-----    Running gatk HaplotypeCaller    -----"
+        echo "##############################################"
+
         gatk --java-options "{params.java_opts}" HaplotypeCaller \
             --native-pair-hmm-threads {threads} \
             {params.extra} \
             -R {input.genome} \
             -L {input.intervals} \
             -I {input.bam} \
-            -O {output.vcf}
+            -O {output.vcf} \
+            2> {log}
         """
 
 
@@ -515,15 +553,19 @@ rule gatk_haplotypecaller:
 # *********************************************************************
 rule generate_sample_name_map:
     input:
-        # while this is not used, it is required to make snakemake wait
-        # for the gVCFs to be generated
+        # this input is unused but required to make snakemake wait for the gVCFs
         expand(rules.gatk_haplotypecaller.output.vcf, sample=SAMPLES),
     params:
         directory=config["gatk_haplotypecaller"]["dir"],
     output:
         config["vcf_sample_name_map"]["tsv"],
     shell:
-        "python workflow/scripts/generate_sample_vcf_map.py {params.directory} {output}"
+        """
+        echo "##############################################"
+        echo "------    Generating VCF-Sample Map    ------"
+        echo "##############################################"
+        python workflow/scripts/generate_sample_vcf_map.py {params.directory} {output}
+        """
 
 
 # 5c) gatk GenomicsDBImport - merge gVCFs into one genomic database
@@ -546,12 +588,16 @@ rule gatk_genomics_db_import:
         "env/gatk.yaml"
     shell:
         """
+        echo "##############################################"
+        echo "----    Running gatk GenomicsDBImport    ----"
+        echo "##############################################"
         gatk --java-options "{params.java_opts}" GenomicsDBImport \
             {params.extra} \
             --reader-threads {threads} \
             --genomicsdb-workspace-path {output.dir} \
             --sample-name-map {input.sample_map} \
-            -L {input.intervals}
+            -L {input.intervals} \
+            2> {log}
         """
 
 
@@ -574,12 +620,16 @@ rule gatk_genotype_gvcfs:
         "env/gatk.yaml"
     shell:
         """
+        echo "##############################################"
+        echo "-----     Running gatk GenotypeGVCFs     -----"
+        echo "##############################################"
         gatk --java-options "{params.java_opts}" GenotypeGVCFs \
             {params.extra} \
             -R {input.genome} \
             -V gendb://{input.db} \
             -L {input.intervals} \
-            -O {output.vcf}
+            -O {output.vcf} \
+            2> {log}
         """
 
 
@@ -599,23 +649,30 @@ rule gatk_var_split_variants:
         snps=config["gatk_var_split"]["dir"] + "snps.vcf.gz",
         indels=config["gatk_var_split"]["dir"] + "indels.vcf.gz",
     log:
-        config["gatk_var_split"]["log"] + "separate.log",
+        snps=config["gatk_var_split"]["dir"] + "log/snps.log",
+        indels=config["gatk_var_split"]["dir"] + "log/indels.log",
     params:
         java_opts=config["gatk_java_opts"],
     conda:
         "env/gatk.yaml"
     shell:
         """
+        echo "##############################################"
+        echo "-----    Running gatk SelectVariants     -----"
+        echo "##############################################"
         gatk --java-options "{params.java_opts}" SelectVariants \
             -R {input.genome} \
             -V {input.vcf} \
             -O {output.snps} \
-            --select-type-to-include SNP
+            --select-type-to-include SNP \
+            2> {log.snps}
+
         gatk --java-options "{params.java_opts}" SelectVariants \
             -R {input.genome} \
             -V {input.vcf} \
             -O {output.indels} \
-            --select-type-to-include INDEL
+            --select-type-to-include INDEL \
+            2> {log.indels}
         """
 
 
@@ -631,7 +688,8 @@ rule gatk_var_filter_hard:
         snps=config["gatk_var_filter_hard"]["dir"] + "snps_filtered.vcf.gz",
         indels=config["gatk_var_filter_hard"]["dir"] + "indels_filtered.vcf.gz",
     log:
-        config["gatk_var_filter_hard"]["dir"] + "filtered.log",
+        snps=config["gatk_var_filter_hard"]["dir"] + "log/snps.log",
+        indels=config["gatk_var_filter_hard"]["dir"] + "log/indels.log",
     params:
         java_opts=config["gatk_java_opts"],
         extra_snps=config["gatk_var_filter_hard"]["extra_indels"],
@@ -640,16 +698,23 @@ rule gatk_var_filter_hard:
         "env/gatk.yaml"
     shell:
         """
+        echo "##############################################"
+        echo "----    Running gatk VariantFiltration    ----"
+        echo "##############################################"
         gatk --java-options "{params.java_opts}" VariantFiltration \
             {params.extra_snps} \
             -R {input.genome} \
             -V {input.snps} \
-            -O {output.snps}
+            -O {output.snps} \
+            2> {log.snps}
+
+
         gatk --java-options "{params.java_opts}" VariantFiltration \
             {params.extra_indels} \
             -R {input.genome} \
             -V {input.indels} \
-            -O {output.indels}
+            -O {output.indels} \
+            2> {log.indels}
         """
 
 
@@ -669,6 +734,9 @@ rule gatk_merge_vcfs:
         "env/gatk.yaml"
     shell:
         """
+        echo "##############################################"
+        echo "---------   Running gatk MergeVcfs   ---------"
+        echo "##############################################"
         gatk --java-options "{params.java_opts}" MergeVcfs \
             -I {input.snps} \
             -I {input.indels} \

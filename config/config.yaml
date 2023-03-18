@@ -54,7 +54,6 @@ samtools_index:
 bedops_gff2bed:
    bed: output/2_genome_reference/bed/genome.bed  # genome bed file
    feature: protein_coding_gene                   # features to filter genome gff file, for read mapping
-   conda_env: env/bedops.yaml                     # conda environment file
 
 
 
@@ -67,7 +66,7 @@ bedops_gff2bed:
 # ----------------------------------------------------------------
 trim_reads:
    dir: output/3_trimmed_fastq/                                           # output directory
-   trimmer: "fastp"                                                       # trimmer to use, options: {trimmomatic, fastp}
+   trimmer: "trimmomatic"                                                       # trimmer to use, options: {trimmomatic, fastp}
    extra_trimmomatic:                                                     # See trimmomatic manual for adding additional options
       - "LEADING:3"
       - "TRAILING:3"
@@ -90,7 +89,6 @@ trim_reads:
 bwa:
    index: output/2_genome_reference/index/genome  # genome fasta file
    dir: output/4_mapped_reads/1_bwa/              # output directory
-   log: output/4_mapped_reads/1_bwa/log/          # log directory
 
 
 
@@ -106,7 +104,6 @@ gatk_clean:
 gatk_markdup:
    dir: output/4_mapped_reads/3_gatk_markdup/              # output directory
    metrics: output/4_mapped_reads/3_gatk_markdup/metrics/  # metrics directory
-   log: output/4_mapped_reads/3_gatk_markdup/log/          # log directory
    extra:
       - "--remove-all-duplicates true"
       - "--create-output-bam-index true"
@@ -117,7 +114,6 @@ gatk_markdup:
 # ----------------------------------------------------------------
 samtools_view:
    dir: output/4_mapped_reads/4_samtools/      # output directory
-   log: output/4_mapped_reads/4_samtools/log/  # log directory
 
 
 
@@ -131,9 +127,7 @@ samtools_stats:
 # gatk_collect_insert_size_metrics
 # ----------------------------------------------------------------
 gatk_insert_size:
-   dir_metrics: output/4_mapped_reads/7_insert_size/metrics      # output directory
-   dir_histogram: output/4_mapped_reads/7_insert_size/histogram  # output directory
-   log: output/4_mapped_reads/7_insert_size/log                  # log files
+   dir: output/4_mapped_reads/7_insert_size/
    extra:                                                        # extra options to pass to gatk
       - "--MINIMUM_PCT 0.05"
 
@@ -148,7 +142,6 @@ gatk_insert_size:
 # ----------------------------------------------------------------
 gatk_haplotypecaller:
    dir: output/5_variant_calling/1_gatk_haplotypecaller/      # output directory
-   log: output/5_variant_calling/1_gatk_haplotypecaller/log/  # output directory
    erc: GVCF                                                  # Possible values: {NONE, BP_RESOLUTION, GVCF}
    extra:                                                     # extra options to pass to gatk
       - "--emit-ref-confidence GVCF"
@@ -170,12 +163,12 @@ gatk_haplotypecaller:
 # gatk_genomics_db_import
 # ----------------------------------------------------------------
 vcf_sample_name_map:
-   tsv: output/5_variant_calling/2_gatk_genomicsdb/1_sample_map/sample_name_map.txt  # output directory
+   tsv: output/5_variant_calling/2_gatk_genomicsdb/sample_map/sample_name_map.txt  # output directory
 
 
 
 gatk_genomicsdb:
-   dir: output/5_variant_calling/2_gatk_genomicsdb/2_genomicsdb  # output directory
+   dir: output/5_variant_calling/2_gatk_genomicsdb/genomicsdb  # output directory
    extra:
       - "--batch-size 0"
       - "--genomicsdb-segment-size 1048576"
@@ -203,7 +196,6 @@ gatk_genotype_gvcfs:
 # ----------------------------------------------------------------
 gatk_var_split:
    dir: output/6_variants/1_gatk_variants_split/     # output directory
-   log: output/6_variants/1_gatk_variants_split/log  # log directory
 
 
 
@@ -211,7 +203,6 @@ gatk_var_split:
 # ----------------------------------------------------------------
 gatk_var_filter_hard:
    dir: output/6_variants/2_gatk_variants_filtered/     # output directory
-   log: output/6_variants/2_gatk_variants_filtered/log  # log directory
    extra_snps:
    - '-filter "DP < 10" --filter-name "DP10"'
    - '-filter "QD < 2.0" --filter-name "QD2"'
