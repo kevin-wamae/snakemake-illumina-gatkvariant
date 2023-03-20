@@ -46,8 +46,7 @@
 
 # step 8 - variant annotation
 # - 8a) rule snpeff_annotate_variants - variant annotation and functional effect prediction
-# - 8b) rule snpsift - extract vcf fields
-# - 8c) rule awk_allele_freq - compute allele frequencies from vcf AD field
+# - 8b) rule snpsift - extract vcf fields and calculate allele frequencies
 
 
 # ######################################################################
@@ -196,7 +195,7 @@ rule all:
         config["snpeff"]["dir"] + "annotated.vcf.gz",
         # ------------------------------------
         # snpsift_extract_variants
-        config["snpeff"]["dir"] + "variants.tsv",
+        config["snpeff"]["dir"] + "annotated.tsv",
         # ------------------------------------
 
 
@@ -904,13 +903,13 @@ rule snpeff_annotate_variants:
         """
 
 
-# 8b) SnpSift - extract vcf fields
+# 8b) SnpSift - extract vcf fields and calculate allele frequencies
 # *********************************************************************
 rule snpsift_extract_variants:
     input:
         vcf=rules.snpeff_annotate_variants.output.vcf,
     output:
-        variants=config["snpeff"]["dir"] + "variants.tsv",
+        variants=config["snpeff"]["dir"] + "annotated.tsv",
     params:
         extra=config["snpeff"]["extra_snpsift"],
     conda:
@@ -919,20 +918,7 @@ rule snpsift_extract_variants:
         """
         SnpSift extractFields \
             {input.vcf} \
-            {params.extra} \
-            > {output.variants}
-        """
-
-
-# 8c) awk - compute allele frequencies from vcf AD field
-# *********************************************************************
-rule awk_allele_freq:
-    input:
-        variants=rules.snpsift_extract_variants.output.variants,
-    output:
-        freq=config["snpeff"]["dir"] + "variants_freq.tsv",
-    shell:
-        """
+            {params.extra} |\
         awk '
             BEGIN {{ FS=OFS="\\t" }}
             NR == 1 {{
@@ -952,6 +938,6 @@ rule awk_allele_freq:
                 }}
             }}
             {{ print $0, allelFreq1, allelFreq2 }}
-        ' {input.variants} |\
-        sed -e 's/ANN\\[\\*\\]\\.//g' | sed -e 's/GEN\\[\\*\\]\\.//g' > {output.freq}
+            ' |\
+        sed -e 's/ANN\\[\\*\\]\\.//g' | sed -e 's/GEN\\[\\*\\]\\.//g' > {output.variants}
         """
