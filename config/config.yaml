@@ -252,19 +252,32 @@ gatk_filter_pass:
 # snpeff_annotate_variants:
 # ----------------------------------------------------------------
 snpeff:
-   dir: output/7_variant_annotation/1_snpeff/  # output directory
-   config: .snpEff.config                      # snpeff config file
-   database: P.falciparum                      # snpeff database
-   extra:                                      # extra options to pass to snpeff
-      - "-no-downstream"                       # do not annotate downstream variants
-      - "-no-intergenic"                       # do not annotate intergenic variants
-      - "-no-intron"                           # do not annotate intronic variants
-      - "-no-upstream"                         # do not annotate upstream variants
-      - "-no-utr"                              # do not annotate UTR variants
-      - "-no SPLICE_SITE_REGION"               # do not annotate splice site variants
-      - "-hgvs1LetterAa"                       # use one-letter amino acid codes in HGVS
-      - "-noLof"                               # do not annotate loss-of-function variants
-      - "-noShiftHgvs"                         # do not annotate HGVS for shifted variants
-      - "-noMotif"                             # do not annotate regulatory features
-      - "-noInteraction"                       # do not annotate protein-protein interactions
-      - "-noStats"                             # do not annotate variant statistics
+   dir: output/7_variant_annotation/  # output directory
+   config: .snpEff.config                # snpeff config file
+   database: P.falciparum                # snpeff database
+   extra_snpeff:                         # extra options to pass to snpeff
+      - "-no-downstream"                     # do not annotate downstream variants
+      - "-no-intergenic"                     # do not annotate intergenic variants
+      - "-no-intron"                         # do not annotate intronic variants
+      - "-no-upstream"                       # do not annotate upstream variants
+      - "-no-utr"                            # do not annotate UTR variants
+      - "-no SPLICE_SITE_REGION"             # do not annotate splice site variants
+      - "-hgvs1LetterAa"                     # use one-letter amino acid codes in HGVS
+      - "-noLof"                             # do not annotate loss-of-function variants
+      - "-noShiftHgvs"                       # do not annotate HGVS for shifted variants
+      - "-noMotif"                           # do not annotate regulatory features
+      - "-noInteraction"                     # do not annotate protein-protein interactions
+      - "-noStats"                           # do not annotate variant statistics
+   extra_snpsift:
+      - CHROM
+      - POS
+      - REF
+      - ALT
+      - "ANN[*].ALLELE"
+      - "ANN[*].EFFECT"
+      - "ANN[*].GENEID"
+      - "ANN[*].HGVS_C"
+      - "ANN[*].HGVS_P"
+      - "ANN[*].CDS_POS"
+      - "ANN[*].AA_POS"
+      - "GEN[*].AD"

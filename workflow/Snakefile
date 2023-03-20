@@ -44,6 +44,10 @@
 # - 7c) rule gatk_merge_vcfs - merge snps and indels
 # - 7d) rule gatk_filter_pass - exlude variants that failed filters
 
+# step 8 - variant annotation
+# - 8a) rule snpeff_annotate_variants - variant annotation and functional effect prediction
+# - 8b) rule snpsift - extract vcf fields
+
 
 # ######################################################################
 #                              Dependencies
@@ -187,8 +191,12 @@ rule all:
         # gatk_filter_pass
         config["gatk_filter_pass"]["dir"] + "pass.vcf.gz",
         # ------------------------------------
-        # gatk_filter_fail
+        # snpeff_annotate_variants
         config["snpeff"]["dir"] + "annotated.vcf.gz",
+        # ------------------------------------
+        # snpsift_extract_variants
+        config["snpeff"]["dir"] + "variants.tsv",
+        # ------------------------------------
 
 
 # ######################################################################
@@ -450,7 +458,7 @@ rule gatk_clean:
 
 # 4e) gatk MarkDuplicatesSpark - mark duplicate reads
 # TODO: replace wrapper with shell command
-# TODO: compare performance with sambamba markdup
+# TODO: compare performance with sambamba and samblaster
 # *********************************************************************
 rule gatk_markdup:
     input:
@@ -546,6 +554,7 @@ rule samtools_flagstat:
 
 
 # 5c) samtools depth - (get mapping-quality statistics from BAM file)
+# TODO: compare performance with bedtools genomecov and mosdepth
 # *********************************************************************
 rule samtools_depth:
     input:
@@ -872,16 +881,16 @@ rule gatk_filter_pass:
 # ######################################################################
 
 
-# snpEff annotate - variant annotation and functional effect prediction
+# 8a) snpEff annotate - variant annotation and functional effect prediction
 # *********************************************************************
 rule snpeff_annotate_variants:
     input:
-        rules.gatk_filter_pass.output.vcf,
+        vcf=rules.gatk_filter_pass.output.vcf,
     output:
         vcf=config["snpeff"]["dir"] + "annotated.vcf.gz",
     params:
         config=config["snpeff"]["config"],
-        extra=config["snpeff"]["extra"],
+        extra=config["snpeff"]["extra_snpeff"],
         database=config["snpeff"]["database"],
     conda:
         "envs/snpeff.yaml"
@@ -890,5 +899,25 @@ rule snpeff_annotate_variants:
         snpEff {params.extra} \
             -config {params.config} \
             {params.database} \
-            {input} | gzip > {output.vcf}
+            {input.vcf} | gzip > {output.vcf}
+        """
+
+
+# 8b) SnpSift - extract vcf fields
+# *********************************************************************
+rule snpsift_extract_variants:
+    input:
+        vcf=rules.snpeff_annotate_variants.output.vcf,
+    output:
+        variants=config["snpeff"]["dir"] + "variants.tsv",
+    params:
+        extra=config["snpeff"]["extra_snpsift"],
+    conda:
+        "envs/snpsift.yaml"
+    shell:
+        """
+        SnpSift extractFields \
+            {input.vcf} \
+            {params.extra} \
+            > {output.variants}
         """

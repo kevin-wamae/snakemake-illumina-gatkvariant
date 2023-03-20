@@ -1,0 +1,4 @@
+channels:
+  - defaults
+dependencies:
+  - bioconda::snpsift>=5.1
