@@ -186,6 +186,9 @@ rule all:
         # ------------------------------------
         # gatk_filter_pass
         config["gatk_filter_pass"]["dir"] + "pass.vcf.gz",
+        # ------------------------------------
+        # gatk_filter_fail
+        config["snpeff"]["dir"] + "annotated.vcf.gz",
 
 
 # ######################################################################
@@ -861,4 +864,31 @@ rule gatk_filter_pass:
             -O {output.vcf} \
             --exclude-filtered \
             2> {log}
+        """
+
+
+# ######################################################################
+#                      Step 8 - Variant Annotation
+# ######################################################################
+
+
+# snpEff annotate - variant annotation and functional effect prediction
+# *********************************************************************
+rule snpeff_annotate_variants:
+    input:
+        rules.gatk_filter_pass.output.vcf,
+    output:
+        vcf=config["snpeff"]["dir"] + "annotated.vcf.gz",
+    params:
+        config=config["snpeff"]["config"],
+        extra=config["snpeff"]["extra"],
+        database=config["snpeff"]["database"],
+    conda:
+        "envs/snpeff.yaml"
+    shell:
+        """
+        snpEff {params.extra} \
+            -config {params.config} \
+            {params.database} \
+            {input} | gzip > {output.vcf}
         """

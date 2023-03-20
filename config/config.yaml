@@ -241,3 +241,30 @@ gatk_merge_vcfs:
 # ----------------------------------------------------------------
 gatk_filter_pass:
    dir: output/6_variant_filtering/4_gatk_variants_pass/  # output directory
+
+
+
+# ######################################################################
+#                      Step 8 - Variant Annotation
+# ######################################################################
+
+
+# snpeff_annotate_variants:
+# ----------------------------------------------------------------
+snpeff:
+   dir: output/7_variant_annotation/1_snpeff/  # output directory
+   config: .snpEff.config                      # snpeff config file
+   database: P.falciparum                      # snpeff database
+   extra:                                      # extra options to pass to snpeff
+      - "-no-downstream"                       # do not annotate downstream variants
+      - "-no-intergenic"                       # do not annotate intergenic variants
+      - "-no-intron"                           # do not annotate intronic variants
+      - "-no-upstream"                         # do not annotate upstream variants
+      - "-no-utr"                              # do not annotate UTR variants
+      - "-no SPLICE_SITE_REGION"               # do not annotate splice site variants
+      - "-hgvs1LetterAa"                       # use one-letter amino acid codes in HGVS
+      - "-noLof"                               # do not annotate loss-of-function variants
+      - "-noShiftHgvs"                         # do not annotate HGVS for shifted variants
+      - "-noMotif"                             # do not annotate regulatory features
+      - "-noInteraction"                       # do not annotate protein-protein interactions
+      - "-noStats"                             # do not annotate variant statistics
