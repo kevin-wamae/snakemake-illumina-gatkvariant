@@ -11,8 +11,8 @@ threads: 4  # replace '4' with the number of threads you want to use
 
 # gatk_java_opts - memory allocation for gatk tools
 # ----------------------------------------------------------------
-gatk_java_opts:       # replace '4' with the amaount of memory you want to use
-   - "-Xmx4g -Xms4g"  # maximum heap size
+gatk_java_opts:  # replace '4' with the amaount of memory you want to use
+   - "-Xmx4G"    # maximum heap size
 
 
 # fastq files, adapters (if needed) and genome files
@@ -65,18 +65,20 @@ bedops_gff2bed:
 # trimmomatic/fastp - clip illumina adapters, paired end mode
 # ----------------------------------------------------------------
 trim_reads:
-   dir: output/3_trimmed_fastq/                                           # output directory
-   trimmer: "trimmomatic"                                                       # trimmer to use, options: {trimmomatic, fastp}
-   extra_trimmomatic:                                                     # See trimmomatic manual for adding additional options
-      - "LEADING:3"
+   dir: output/3_trimmed_fastq/         # output directory
+   trimmer: "trimmomatic"               # trimmer to use, options: {trimmomatic, fastp}
+   extra_trimmomatic:                   # See trimmomatic manual for adding additional options
+      - "LEADING:3"                               
       - "TRAILING:3"
-      - "SLIDINGWINDOW:4:15"
+      - "SLIDINGWINDOW:4:15"            # window size:required quality
       - "MINLEN:36"
-   extra_fastp:                                                           # See fastp manual for adding additional options
-      - "--cut_tail --cut_tail_mean_quality 20 --cut_tail_window_size 4"  # cut tail options
-      - "--qualified_quality_phred 15"                                    # quality filter options
-      - "--length_required 15"                                            # discard reads shorter than this
-      - "--length_limit 0"                                                # discard reads longer than this, 0 means no limit
+   extra_fastp:                         # See fastp manual for adding additional options
+      - "--cut_tail"                    # cut tail options
+      - "--cut_tail_mean_quality 20"                               
+      - "--cut_tail_window_size 4"                                 
+      - "--qualified_quality_phred 15"  # quality filter options
+      - "--length_required 15"          # discard reads shorter than this
+      - "--length_limit 0"              # discard reads longer than this, 0 means no limit
 
 
 
@@ -89,7 +91,7 @@ trim_reads:
 # ----------------------------------------------------------------
 bwa:
    index: output/2_genome_reference/index/genome  # genome fasta file
-   dir: output/4_mapped_reads/1_bam_files/              # output directory
+   dir: output/4_mapped_reads/1_bam_files/        # output directory
    extra:
       - "-M"                                      # mark shorter split hits as secondary (for Picard compatibility)
 
@@ -190,7 +192,7 @@ gatk_genotype_gvcfs:
    dir: output/5_variant_calling/3_gatk_genotypeVCFs/  # output directory
    extra:
       - "--genomicsdb-use-bcf-codec false"
-      - "--standard-min-confidence-threshold-for-calling 10.0"
+      - "--standard-min-confidence-threshold-for-calling 30.0"
       - "--max-genotype-count 1024"
 
 
@@ -212,7 +214,7 @@ gatk_var_split:
 gatk_filter_hard:
    dir: output/6_variant_filtering/2_gatk_variants_filtered/     # output directory
    extra_snps:
-   - '-filter "DP < 10" --filter-name "DP10"'
+   - '-filter "DP < 1" --filter-name "DP1"'
    - '-filter "QD < 2.0" --filter-name "QD2"'
    - '-filter "QUAL < 30.0" --filter-name "QUAL30"'
    - '-filter "SOR > 3.0" --filter-name "SOR3"'
@@ -221,7 +223,7 @@ gatk_filter_hard:
    - '-filter "MQRankSum < -12.5" --filter-name "MQRankSum-12.5"'
    - '-filter "ReadPosRankSum < -8.0" --filter-name "ReadPosRankSum-8"'
    extra_indels:
-   - '-filter "DP < 10" --filter-name "DP10"'
+   - '-filter "DP < 1" --filter-name "DP1"'
    - '-filter "QD < 2.0" --filter-name "QD2"'
    - '-filter "QUAL < 30.0" --filter-name "QUAL30"'
    - '-filter "FS > 200.0" --filter-name "FS200"'
@@ -233,7 +235,6 @@ gatk_filter_hard:
 # ----------------------------------------------------------------
 gatk_merge_vcfs:
    dir: output/6_variant_filtering/3_gatk_variants_merged/     # output directory
-   log: output/6_variant_filtering/3_gatk_variants_merged/log  # log directory
 
 
 

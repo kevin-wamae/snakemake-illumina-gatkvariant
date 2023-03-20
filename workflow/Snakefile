@@ -127,32 +127,32 @@ rule all:
         # samtools_idxstats
         expand(
             config["map_qual_stats"]["dir"]
-            + "1_samtools_idxstats/{sample}.bam.idxstats.txt",
+            + "samtools/idxstats/{sample}.bam.idxstats.txt",
             sample=SAMPLES,
         ),
         # ------------------------------------
         # samtools_flagstats
         expand(
             config["map_qual_stats"]["dir"]
-            + "2_samtools_flagstat/{sample}.bam.flagstat.txt",
+            + "samtools/flagstat/{sample}.bam.flagstat.txt",
             sample=SAMPLES,
         ),
         # ------------------------------------
         # samtools_depth
         expand(
-            config["map_qual_stats"]["dir"]
-            + "3_samtools_depth/{sample}.bam.depth.txt",
+            config["map_qual_stats"]["dir"] + "samtools/depth/{sample}.bam.depth.txt",
             sample=SAMPLES,
         ),
         # ------------------------------------
         # gatk_insert_size_metrics
         expand(
-            config["map_qual_stats"]["dir"] + "3_gatk/metrics/{sample}.metrics.txt",
+            config["map_qual_stats"]["dir"]
+            + "gatk/insert_size/metrics/{sample}.metrics.txt",
             sample=SAMPLES,
         ),
         expand(
             config["map_qual_stats"]["dir"]
-            + "3_gatk/histogram/{sample}.histogram.pdf",
+            + "gatk/insert_size/histogram/{sample}.histogram.pdf",
             sample=SAMPLES,
         ),
         # ------------------------------------
@@ -289,6 +289,7 @@ rule bedops_gff2bed:
 
 
 # 3) trimmomatic/fastp - trim adapters and low quality bases
+# TODO: drop trim log
 # *********************************************************************
 rule trim_reads:
     input:
@@ -341,7 +342,7 @@ rule trim_reads:
                 {output.r1} {output.r1_unpaired} \
                 {output.r2} {output.r2_unpaired} \
                 {params.opts_trimmomatic} \
-                -trimlog {log.log}
+                2> {log.log}
         fi
         """
 
@@ -371,6 +372,7 @@ rule bwa_index:
 
 
 # 4b) bwa mem - map reads to genome
+# TODO: delete sam file after conversion to bam
 # *********************************************************************
 rule bwa_mem:
     input:
@@ -380,7 +382,7 @@ rule bwa_mem:
         ],
         idx=rules.bwa_index.output,
     output:
-        sam=config["bwa"]["dir"] + "{sample}.sam",
+        sam=temporary(config["bwa"]["dir"] + "{sample}.sam"),
     log:
         config["bwa"]["dir"] + "log/{sample}.log",
     params:
@@ -520,7 +522,7 @@ rule samtools_idxstats:
         bam=rules.samtools_filter.output.bam,
     output:
         idxstats=config["map_qual_stats"]["dir"]
-        + "1_samtools_idxstats/{sample}.bam.idxstats.txt",
+        + "samtools/idxstats/{sample}.bam.idxstats.txt",
     conda:
         "envs/samtools.yaml"
     shell:
@@ -540,7 +542,7 @@ rule samtools_flagstat:
         bam=rules.samtools_filter.output.bam,
     output:
         flagstat=config["map_qual_stats"]["dir"]
-        + "2_samtools_flagstat/{sample}.bam.flagstat.txt",
+        + "samtools/flagstat/{sample}.bam.flagstat.txt",
     conda:
         "envs/samtools.yaml"
     shell:
@@ -560,8 +562,7 @@ rule samtools_depth:
     input:
         bam=rules.samtools_filter.output.bam,
     output:
-        depth=config["map_qual_stats"]["dir"]
-        + "3_samtools_depth/{sample}.bam.depth.txt",
+        depth=config["map_qual_stats"]["dir"] + "samtools/depth/{sample}.bam.depth.txt",
     conda:
         "envs/samtools.yaml"
     shell:
@@ -581,11 +582,12 @@ rule gatk_insert_size_metrics:
         bam=rules.samtools_filter.output.bam,
         genome=rules.gather_genome_data.output.genome,
     output:
-        metrics=config["map_qual_stats"]["dir"] + "3_gatk/metrics/{sample}.metrics.txt",
+        metrics=config["map_qual_stats"]["dir"]
+        + "gatk/insert_size/metrics/{sample}.metrics.txt",
         histogram=config["map_qual_stats"]["dir"]
-        + "3_gatk/histogram/{sample}.histogram.pdf",
+        + "gatk/insert_size/histogram/{sample}.histogram.pdf",
     log:
-        config["map_qual_stats"]["dir"] + "3_gatk/log/{sample}.log",
+        config["map_qual_stats"]["dir"] + "gatk/log/{sample}.log",
     params:
         extra=config["map_qual_stats"]["extra_gatk"],
         java_opts=config["gatk_java_opts"],
@@ -896,6 +898,10 @@ rule snpeff_annotate_variants:
         "envs/snpeff.yaml"
     shell:
         """
+        echo "##############################################"
+        echo "--------   Running SnpEff Annotate   --------"
+        echo "##############################################"
+
         snpEff {params.extra} \
             -config {params.config} \
             {params.database} \
@@ -916,6 +922,10 @@ rule snpsift_extract_variants:
         "envs/snpsift.yaml"
     shell:
         """
+        echo "##############################################"
+        echo "--------   Running SnpSift Extract   --------"
+        echo "##############################################"
+
         SnpSift extractFields \
             {input.vcf} \
             {params.extra} |\
