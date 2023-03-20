@@ -2,3 +2,4 @@ channels:
   - defaults
 dependencies:
   - bioconda::bwa>=0.7.17
+  - bioconda::samtools

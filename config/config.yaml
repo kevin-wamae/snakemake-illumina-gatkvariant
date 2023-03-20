@@ -79,6 +79,7 @@ trim_reads:
       - "--length_limit 0"                                                # discard reads longer than this, 0 means no limit
 
 
+
 # ################################################################
 #                    step 4 - map reads to genome
 # ################################################################
@@ -91,6 +92,13 @@ bwa:
    dir: output/4_mapped_reads/1_bwa/              # output directory
    extra:
       - "-M"                                      # mark shorter split hits as secondary (for Picard compatibility)
+
+
+
+# samtools_sam2bam
+# ----------------------------------------------------------------
+samtools_sam2bam:
+   dir: output/4_mapped_reads/1_bwa/  # output directory
 
 
 
