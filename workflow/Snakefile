@@ -25,7 +25,7 @@
 # - 4c) rule samtools_sam2bam - convert sam to bam
 # - 4d) rule gatk_clean - clean sam file (remove artifacts in SAM/BAM files)
 # - 4e) rule gatk_markdup - mark duplicate reads
-# - 4f) rule samtools_view - filter reads occuring in the core genome and index the bam file
+# - 4f) rule samtools_filter - filter reads occuring in the core genome and index the bam file
 
 # step 5 - mapping quality statistics
 # - 5a) rule samtools_idxstats - count reads in each chromosome
@@ -117,26 +117,38 @@ rule all:
         ),
         # ------------------------------------
         # samtools
-        expand(config["samtools_view"]["dir"] + "{sample}.bam", sample=SAMPLES),
-        expand(config["samtools_view"]["dir"] + "{sample}.bam.bai", sample=SAMPLES),
+        expand(config["samtools_filter"]["dir"] + "{sample}.bam", sample=SAMPLES),
+        expand(config["samtools_filter"]["dir"] + "{sample}.bam.bai", sample=SAMPLES),
         # ------------------------------------
-        # samtools_idxstats & samtools_flagstats
+        # samtools_idxstats
         expand(
-            config["samtools_stats"]["dir"] + "{sample}.bam.idxstats.txt",
+            config["map_qual_stats"]["dir"]
+            + "1_samtools_idxstats/{sample}.bam.idxstats.txt",
             sample=SAMPLES,
         ),
+        # ------------------------------------
+        # samtools_flagstats
         expand(
-            config["samtools_stats"]["dir"] + "{sample}.bam.flagstat.txt",
+            config["map_qual_stats"]["dir"]
+            + "2_samtools_flagstat/{sample}.bam.flagstat.txt",
+            sample=SAMPLES,
+        ),
+        # ------------------------------------
+        # samtools_depth
+        expand(
+            config["map_qual_stats"]["dir"]
+            + "3_samtools_depth/{sample}.bam.depth.txt",
             sample=SAMPLES,
         ),
         # ------------------------------------
         # gatk_insert_size_metrics
         expand(
-            config["gatk_insert_size"]["dir"] + "metrics/{sample}.metrics.txt",
+            config["map_qual_stats"]["dir"] + "3_gatk/metrics/{sample}.metrics.txt",
             sample=SAMPLES,
         ),
         expand(
-            config["gatk_insert_size"]["dir"] + "histogram/{sample}.histogram.pdf",
+            config["map_qual_stats"]["dir"]
+            + "3_gatk/histogram/{sample}.histogram.pdf",
             sample=SAMPLES,
         ),
         # ------------------------------------
@@ -399,7 +411,10 @@ rule samtools_sam2bam:
         echo "------    Running Samtools Sam2Bam    ------"
         echo "##############################################"
 
-        samtools view -Sb {input.sam} > {output.bam} 2> {log}
+        samtools view \
+            -Sb {input.sam} \
+            > {output.bam} \
+            2> {log}
         """
 
 
@@ -420,7 +435,7 @@ rule gatk_clean:
     shell:
         """
         echo "##############################################"
-        echo "--------    Running gatk CleanSam    --------"
+        echo "--------    Running GATK CleanSam    --------"
         echo "##############################################"
         gatk --java-options "{params.java_opts}" CleanSam \
             -R {input.genome} \
@@ -452,16 +467,16 @@ rule gatk_markdup:
 
 # 4f) samtools view - filter reads occuring in the core genome and index the bam file
 # *********************************************************************
-rule samtools_view:
+rule samtools_filter:
     input:
         bam=rules.gatk_markdup.output.bam,
         genome=rules.gather_genome_data.output.genome,
         core_genome=config["input"]["genome"]["core"],
     output:
-        bam=config["samtools_view"]["dir"] + "{sample}.bam",
-        index=config["samtools_view"]["dir"] + "{sample}.bam.bai",
+        bam=config["samtools_filter"]["dir"] + "{sample}.bam",
+        index=config["samtools_filter"]["dir"] + "{sample}.bam.bai",
     log:
-        config["samtools_view"]["dir"] + "log/{sample}.log",
+        config["samtools_filter"]["dir"] + "log/{sample}.log",
     threads: config["threads"]
     conda:
         "envs/samtools.yaml"
@@ -491,9 +506,10 @@ rule samtools_view:
 # *********************************************************************
 rule samtools_idxstats:
     input:
-        bam=rules.samtools_view.output.bam,
+        bam=rules.samtools_filter.output.bam,
     output:
-        idxstats=config["samtools_stats"]["dir"] + "{sample}.bam.idxstats.txt",
+        idxstats=config["map_qual_stats"]["dir"]
+        + "1_samtools_idxstats/{sample}.bam.idxstats.txt",
     conda:
         "envs/samtools.yaml"
     shell:
@@ -510,9 +526,10 @@ rule samtools_idxstats:
 # *********************************************************************
 rule samtools_flagstat:
     input:
-        bam=rules.samtools_view.output.bam,
+        bam=rules.samtools_filter.output.bam,
     output:
-        flagstat=config["samtools_stats"]["dir"] + "{sample}.bam.flagstat.txt",
+        flagstat=config["map_qual_stats"]["dir"]
+        + "2_samtools_flagstat/{sample}.bam.flagstat.txt",
     conda:
         "envs/samtools.yaml"
     shell:
@@ -525,27 +542,47 @@ rule samtools_flagstat:
         """
 
 
-# TODO: add samtools stats and samtools depth
-# 5c) gatk CollectInsertSizeMetrics
+# 5c) samtools depth - (get mapping-quality statistics from BAM file)
+# *********************************************************************
+rule samtools_depth:
+    input:
+        bam=rules.samtools_filter.output.bam,
+    output:
+        depth=config["map_qual_stats"]["dir"]
+        + "3_samtools_depth/{sample}.bam.depth.txt",
+    conda:
+        "envs/samtools.yaml"
+    shell:
+        """
+        echo "##############################################"
+        echo "------    Running Samtools Depth    ------"
+        echo "##############################################"
+
+        samtools depth {input.bam} > {output.depth}
+        """
+
+
+# 5d) gatk CollectInsertSizeMetrics
 # *********************************************************************
 rule gatk_insert_size_metrics:
     input:
-        bam=rules.samtools_view.output.bam,
+        bam=rules.samtools_filter.output.bam,
         genome=rules.gather_genome_data.output.genome,
     output:
-        metrics=config["gatk_insert_size"]["dir"] + "metrics/{sample}.metrics.txt",
-        histogram=config["gatk_insert_size"]["dir"] + "histogram/{sample}.histogram.pdf",
+        metrics=config["map_qual_stats"]["dir"] + "3_gatk/metrics/{sample}.metrics.txt",
+        histogram=config["map_qual_stats"]["dir"]
+        + "3_gatk/histogram/{sample}.histogram.pdf",
     log:
-        config["gatk_insert_size"]["dir"] + "log/{sample}.log",
+        config["map_qual_stats"]["dir"] + "3_gatk/log/{sample}.log",
     params:
-        extra="",
+        extra=config["map_qual_stats"]["extra_gatk"],
         java_opts=config["gatk_java_opts"],
     conda:
         "envs/gatk.yaml"
     shell:
         """
         echo "##############################################"
-        echo "--  Running gatk CollectInsertSizeMetrics  --"
+        echo "--  Running GATK CollectInsertSizeMetrics  --"
         echo "##############################################"
 
         gatk --java-options "{params.java_opts}" CollectInsertSizeMetrics \
@@ -567,7 +604,7 @@ rule gatk_insert_size_metrics:
 # *********************************************************************
 rule gatk_haplotypecaller:
     input:
-        bam=rules.samtools_view.output.bam,
+        bam=rules.samtools_filter.output.bam,
         genome=rules.gather_genome_data.output.genome,
         intervals=config["input"]["genome"]["core"],
     output:
@@ -584,7 +621,7 @@ rule gatk_haplotypecaller:
     shell:
         """
         echo "##############################################"
-        echo "-----    Running gatk HaplotypeCaller    -----"
+        echo "-----    Running GATK HaplotypeCaller    -----"
         echo "##############################################"
 
         gatk --java-options "{params.java_opts}" HaplotypeCaller \
@@ -641,7 +678,7 @@ rule gatk_genomics_db_import:
     shell:
         """
         echo "##############################################"
-        echo "----    Running gatk GenomicsDBImport    ----"
+        echo "----    Running GATK GenomicsDBImport    ----"
         echo "##############################################"
 
         gatk --java-options "{params.java_opts}" GenomicsDBImport \
@@ -674,7 +711,7 @@ rule gatk_genotype_gvcfs:
     shell:
         """
         echo "##############################################"
-        echo "-----     Running gatk GenotypeGVCFs     -----"
+        echo "-----     Running GATK GenotypeGVCFs     -----"
         echo "##############################################"
 
         gatk --java-options "{params.java_opts}" GenotypeGVCFs \
@@ -713,7 +750,7 @@ rule gatk_split_variants:
     shell:
         """
         echo "##############################################"
-        echo "-----    Running gatk SelectVariants     -----"
+        echo "-----    Running GATK SelectVariants     -----"
         echo "##############################################"
 
         gatk --java-options "{params.java_opts}" SelectVariants \
@@ -754,7 +791,7 @@ rule gatk_filter_hard:
     shell:
         """
         echo "##############################################"
-        echo "----    Running gatk VariantFiltration    ----"
+        echo "----    Running GATK VariantFiltration    ----"
         echo "##############################################"
 
         gatk --java-options "{params.java_opts}" VariantFiltration \
@@ -789,7 +826,7 @@ rule gatk_merge_vcfs:
     shell:
         """
         echo "##############################################"
-        echo "---------   Running gatk MergeVcfs   ---------"
+        echo "---------   Running GATK MergeVcfs   ---------"
         echo "##############################################"
 
         gatk --java-options "{params.java_opts}" MergeVcfs \
@@ -816,8 +853,9 @@ rule gatk_filter_pass:
     shell:
         """
         echo "##############################################"
-        echo "-------   Running gatk FilterVcfPass   -------"
+        echo "-------   Running GATK FilterVcfPass   -------"
         echo "##############################################"
+
         gatk --java-options "{params.java_opts}" SelectVariants \
             -V {input.vcf} \
             -O {output.vcf} \

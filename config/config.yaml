@@ -89,7 +89,7 @@ trim_reads:
 # ----------------------------------------------------------------
 bwa:
    index: output/2_genome_reference/index/genome  # genome fasta file
-   dir: output/4_mapped_reads/1_bwa/              # output directory
+   dir: output/4_mapped_reads/1_bam_files/              # output directory
    extra:
       - "-M"                                      # mark shorter split hits as secondary (for Picard compatibility)
 
@@ -98,22 +98,22 @@ bwa:
 # samtools_sam2bam
 # ----------------------------------------------------------------
 samtools_sam2bam:
-   dir: output/4_mapped_reads/1_bwa/  # output directory
+   dir: output/4_mapped_reads/1_bam_files/  # output directory
 
 
 
 # gatk_clean
 # ----------------------------------------------------------------
 gatk_clean:
-   dir: output/4_mapped_reads/2_gatk_clean/      # output directory
+   dir: output/4_mapped_reads/2_bam_cleaned/      # output directory
 
 
 
 # gatk_markdup
 # ----------------------------------------------------------------
 gatk_markdup:
-   dir: output/4_mapped_reads/3_gatk_markdup/              # output directory
-   metrics: output/4_mapped_reads/3_gatk_markdup/metrics/  # metrics directory
+   dir: output/4_mapped_reads/3_bam_marked_duplicates/              # output directory
+   metrics: output/4_mapped_reads/3_bam_marked_duplicates/metrics/  # metrics directory
    extra:
       - "--remove-all-duplicates true"
       - "--create-output-bam-index true"
@@ -122,8 +122,8 @@ gatk_markdup:
 
 # samtools_view
 # ----------------------------------------------------------------
-samtools_view:
-   dir: output/4_mapped_reads/4_samtools/      # output directory
+samtools_filter:
+   dir: output/4_mapped_reads/4_bam_filtered/      # output directory
 
 
 
@@ -134,16 +134,9 @@ samtools_view:
 
 # samtools_idxstats & samtools_flagstat
 # ----------------------------------------------------------------
-samtools_stats:                         
-   dir: output/4_mapped_reads/5_map_qual_stats/  # output directory
-
-
-
-# gatk_collect_insert_size_metrics
-# ----------------------------------------------------------------
-gatk_insert_size:
-   dir: output/4_mapped_reads/7_insert_size/
-   extra:                                                        # extra options to pass to gatk
+map_qual_stats:                         
+   dir: output/4_mapped_reads/5_mapping_statistics/  # output directory
+   extra_gatk:                                       # extra options to pass to gatk
       - "--MINIMUM_PCT 0.05"
 
 
