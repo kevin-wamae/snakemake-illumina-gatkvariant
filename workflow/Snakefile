@@ -210,7 +210,7 @@ rule gatk_genome_dict:
     params:
         java_opts=config["gatk_java_opts"],
     conda:
-        "env/gatk.yaml"
+        "envs/gatk.yaml"
     shell:
         """
         gatk --java-options "{params.java_opts}" CreateSequenceDictionary \
@@ -227,7 +227,7 @@ rule samtools_index:
     output:
         index=config["samtools_index"]["fasta_idx"],
     conda:
-        "env/samtools.yaml"
+        "envs/samtools.yaml"
     shell:
         """
         samtools faidx {input.genome}
@@ -244,7 +244,7 @@ rule bedops_gff2bed:
     params:
         feature=config["bedops_gff2bed"]["feature"],
     conda:
-        "env/bedops.yaml"
+        "envs/bedops.yaml"
     shell:
         """
         convert2bed --input=gff --output=bed < {input} | \
@@ -280,9 +280,9 @@ rule trim_reads:
         json=config["trim_reads"]["dir"] + "log/fastp/{sample}.json",
         html=config["trim_reads"]["dir"] + "log/fastp/{sample}.html",
     conda:
-        "env/trimmomatic.yaml" if config["trim_reads"][
+        "envs/trimmomatic.yaml" if config["trim_reads"][
         "trimmer"
-        ] == "trimmomatic" else "env/fastp.yaml"
+        ] == "trimmomatic" else "envs/fastp.yaml"
     shell:
         """
         echo "##############################################"
@@ -328,7 +328,7 @@ rule bwa_index:
     output:
         index=touch(config["bwa"]["index"]),
     conda:
-        "env/bwa.yaml"
+        "envs/bwa.yaml"
     shell:
         """
         echo "##############################################"
@@ -354,8 +354,10 @@ rule bwa_mem:
     log:
         config["bwa"]["dir"] + "log/{sample}.log",
     params:
-        extra=r"-R '@RG\tID:{sample}\tSM:{sample}'",
+        extra=r"-M -R '@RG\tID:{sample}\tSM:{sample}'",
     threads: config["threads"]
+    conda:
+        "envs/bwa.yaml"
     wrapper:
         "master/bio/bwa/mem"
 
@@ -373,7 +375,7 @@ rule gatk_clean:
     params:
         java_opts=config["gatk_java_opts"],
     conda:
-        "env/gatk.yaml"
+        "envs/gatk.yaml"
     shell:
         """
         echo "##############################################"
@@ -422,7 +424,7 @@ rule samtools_view:
         config["samtools_view"]["dir"] + "log/{sample}.log",
     threads: config["threads"]
     conda:
-        "env/samtools.yaml"
+        "envs/samtools.yaml"
     shell:
         """
         echo "##############################################"
@@ -449,7 +451,7 @@ rule samtools_idxstats:
     output:
         idxstats=config["samtools_stats"]["dir"] + "{sample}.bam.idxstats.txt",
     conda:
-        "env/samtools.yaml"
+        "envs/samtools.yaml"
     shell:
         """
         echo "##############################################"
@@ -468,7 +470,7 @@ rule samtools_flagstat:
     output:
         flagstat=config["samtools_stats"]["dir"] + "{sample}.bam.flagstat.txt",
     conda:
-        "env/samtools.yaml"
+        "envs/samtools.yaml"
     shell:
         """
         echo "##############################################"
@@ -495,7 +497,7 @@ rule gatk_insert_size_metrics:
         extra="",
         java_opts=config["gatk_java_opts"],
     conda:
-        "env/gatk.yaml"
+        "envs/gatk.yaml"
     shell:
         """
         echo "##############################################"
@@ -534,7 +536,7 @@ rule gatk_haplotypecaller:
         extra=config["gatk_haplotypecaller"]["extra"],
     threads: config["threads"]
     conda:
-        "env/gatk.yaml"
+        "envs/gatk.yaml"
     shell:
         """
         echo "##############################################"
@@ -588,7 +590,7 @@ rule gatk_genomics_db_import:
         extra=config["gatk_genomicsdb"]["extra"],
     threads: config["threads"]
     conda:
-        "env/gatk.yaml"
+        "envs/gatk.yaml"
     shell:
         """
         echo "##############################################"
@@ -620,7 +622,7 @@ rule gatk_genotype_gvcfs:
         java_opts=config["gatk_java_opts"],
         threads=config["threads"],
     conda:
-        "env/gatk.yaml"
+        "envs/gatk.yaml"
     shell:
         """
         echo "##############################################"
@@ -658,7 +660,7 @@ rule gatk_split_variants:
     params:
         java_opts=config["gatk_java_opts"],
     conda:
-        "env/gatk.yaml"
+        "envs/gatk.yaml"
     shell:
         """
         echo "##############################################"
@@ -699,7 +701,7 @@ rule gatk_filter_hard:
         extra_snps=config["gatk_filter_hard"]["extra_indels"],
         extra_indels=config["gatk_filter_hard"]["extra_indels"],
     conda:
-        "env/gatk.yaml"
+        "envs/gatk.yaml"
     shell:
         """
         echo "##############################################"
@@ -735,7 +737,7 @@ rule gatk_merge_vcfs:
     params:
         java_opts=config["gatk_java_opts"],
     conda:
-        "env/gatk.yaml"
+        "envs/gatk.yaml"
     shell:
         """
         echo "##############################################"
@@ -761,7 +763,7 @@ rule gatk_filter_pass:
     params:
         java_opts=config["gatk_java_opts"],
     conda:
-        "env/gatk.yaml"
+        "envs/gatk.yaml"
     shell:
         """
         echo "##############################################"
