@@ -47,6 +47,7 @@
 # step 8 - variant annotation
 # - 8a) rule snpeff_annotate_variants - variant annotation and functional effect prediction
 # - 8b) rule snpsift - extract vcf fields
+# - 8c) rule awk_allele_freq - compute allele frequencies from vcf AD field
 
 
 # ######################################################################
@@ -920,4 +921,37 @@ rule snpsift_extract_variants:
             {input.vcf} \
             {params.extra} \
             > {output.variants}
+        """
+
+
+# 8c) awk - compute allele frequencies from vcf AD field
+# *********************************************************************
+rule awk_allele_freq:
+    input:
+        variants=rules.snpsift_extract_variants.output.variants,
+    output:
+        freq=config["snpeff"]["dir"] + "variants_freq.tsv",
+    shell:
+        """
+        awk '
+            BEGIN {{ FS=OFS="\\t" }}
+            NR == 1 {{
+                allelFreq1 = "AF_REF"
+                allelFreq2 = "AF_ALT"
+            }}
+            NR > 1 {{
+                split($12,a,",")
+                sum = a[1] + a[2]
+                if ( sum ) {{
+                    allelFreq1 = a[1] / sum
+                    allelFreq2 = a[2] / sum
+                }}
+                else {{
+                    allelFreq1 = 0
+                    allelFreq2 = 0
+                }}
+            }}
+            {{ print $0, allelFreq1, allelFreq2 }}
+        ' {input.variants} |\
+        sed -e 's/ANN\\[\\*\\]\\.//g' | sed -e 's/GEN\\[\\*\\]\\.//g' > {output.freq}
         """
