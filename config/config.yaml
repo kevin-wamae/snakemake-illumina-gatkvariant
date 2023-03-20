@@ -89,6 +89,8 @@ trim_reads:
 bwa:
    index: output/2_genome_reference/index/genome  # genome fasta file
    dir: output/4_mapped_reads/1_bwa/              # output directory
+   extra:
+      - "-M"                                      # mark shorter split hits as secondary (for Picard compatibility)
 
 
 
