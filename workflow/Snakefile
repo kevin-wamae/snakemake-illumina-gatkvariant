@@ -25,7 +25,7 @@
 # - 4c) rule gatk_clean_bam - clean sam file (remove artifacts in SAM/BAM files)
 # - 4d) rule samtools_fixmate - fix mate information
 # - 4e) rule gatk_markdup - mark duplicate reads
-# - 4f) rule samtools_filter - filter reads occuring in the core genome and index the bam file
+# - 4f) rule samtools_filter - filter reads occurring in the core genome and index the bam file
 
 # step 5 - mapping quality statistics
 # - 5a) rule samtools_idxstats - count reads in each chromosome
@@ -42,7 +42,7 @@
 # - 7a) rule gatk_split_variants - separate snps and indels
 # - 7b) rule gatk_filter_hard - snps and indels
 # - 7c) rule gatk_merge_vcfs - merge snps and indels
-# - 7d) rule gatk_filter_pass - exlude variants that failed filters
+# - 7d) rule gatk_filter_pass - exclude variants that failed filters
 
 # step 8 - variant annotation
 # - 8a) rule snpeff_annotate_variants - variant annotation and functional effect prediction
@@ -485,7 +485,7 @@ rule gatk_markdup:
         "master/bio/gatk/markduplicatesspark"
 
 
-# 4f) samtools view - filter reads occuring in the core genome and index the bam file
+# 4f) samtools view - filter reads occurring in the core genome and index the bam file
 # *********************************************************************
 rule samtools_filter:
     input:
@@ -857,7 +857,7 @@ rule gatk_merge_vcfs:
         """
 
 
-# 7d) gatk FilterPassVariants - exlude variants that failed filters
+# 7d) gatk FilterPassVariants - exclude variants that failed filters
 # *********************************************************************
 rule gatk_filter_pass:
     input:
