@@ -5,7 +5,7 @@
 
 # number of threads to use, whenever possible
 # ----------------------------------------------------------------
-threads: 6  # replace '4' with the number of threads you want to use
+threads: 4  # replace '4' with the number of threads you want to use
 
 
 
