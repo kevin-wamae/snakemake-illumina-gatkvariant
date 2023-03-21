@@ -73,10 +73,9 @@
       - **bed/** - contains the bed file specifying the regions of interest
       - **fastq/** - contains the FastQ files
     - **output/** - contains numbered directorie of the output from the analysis
-    - **env/**   - contains the Conda environment-configuration file
     - **scripts/** - contains the scripts used in the pipeline
     - **workflow/** - contains the Snakefile and:
-      - **env/** - contains the Conda environment-configuration files
+      - **envs/** - contains the Conda environment-configuration files
       - **scripts/** - contains the scripts used in the pipeline
 ```
 .
@@ -93,16 +92,19 @@
 ├── output
 └── workflow
     ├── Snakefile
-    ├── env
+    ├── envs
     │   ├── bedops.yaml
     │   ├── bwa.yaml
     │   ├── environment.yml
+    │   ├── fastp.yaml
     │   ├── gatk.yaml
     │   ├── samtools.yaml
+    │   ├── snpeff.yaml
+    │   ├── snpsift.yaml
     │   └── trimmomatic.yaml
     └── scripts
-        ├── create_snpeff_db.sh
         ├── fastq_rename.py
+        ├── gather_genome_files.sh
         └── generate_sample_vcf_map.py
 ```
 
@@ -112,12 +114,12 @@
 After navigating into the root directory of the project, run the analysis by executing the following commands in your terminal:
 
 1 - Create a conda analysis environment by running the command below in your terminal. This will create a conda environment named `variant-calling-gatk` and install [Snakemake](https://snakemake.readthedocs.io/en/stable/) and [SnpEff](https://pcingola.github.io/SnpEff/se_introduction/) in it:
-  - `conda env create --file workflow/env/variant-calling-gatk.yml`
+  - `conda env create --file workflow/env/environment.yml`
   
 2 - Activate the conda environment by running the command below in your terminal. **_Note:_** This needs to be done every time you exit and restart your terminal and want re-run this pipeline
   - `conda activate variant-calling-gatk`
 
-3 - Execute the shell script below to create the SnpEff and SnpSift database. This will download the _P. falciparum_ genome data from [PlasmoDB](https://plasmodb.org/) and create a database in the **output/** directory. **_Note:_** This is an important step because the genome-FASTA and GFF files are required for read-mapping and variant calling.
+3 - Execute the shell script below to create the SnpEff. This will download the _P. falciparum_ genome data from [PlasmoDB](https://plasmodb.org/) and create a database in the **output/** directory. **_Note:_** This is an important step because the genome-FASTA and GFF files are required for read-mapping and variant calling.
   - `bash workflow/scripts/gather_genome_files.sh`
 
 
