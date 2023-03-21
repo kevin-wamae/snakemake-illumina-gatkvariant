@@ -22,10 +22,9 @@
 # step 4 - map reads to genome
 # - 4a) rule bwa_index - generate bwa genome-index files for mapping
 # - 4b) rule bwa_mem - map reads to genome
-# - 4c) rule samtools_sam2bam - convert sam to bam
-# - 4d) rule gatk_clean - clean sam file (remove artifacts in SAM/BAM files)
-# - 4e) rule gatk_markdup - mark duplicate reads
-# - 4f) rule samtools_filter - filter reads occuring in the core genome and index the bam file
+# - 4c) rule gatk_clean - clean sam file (remove artifacts in SAM/BAM files)
+# - 4d) rule gatk_markdup - mark duplicate reads
+# - 4e) rule samtools_filter - filter reads occuring in the core genome and index the bam file
 
 # step 5 - mapping quality statistics
 # - 5a) rule samtools_idxstats - count reads in each chromosome
@@ -106,10 +105,7 @@ rule all:
         config["bwa"]["index"],
         # ------------------------------------
         # bwa_mem
-        expand(config["bwa"]["dir"] + "{sample}.sam", sample=SAMPLES),
-        # ------------------------------------
-        # samtools_sam2bam
-        expand(config["samtools_sam2bam"]["dir"] + "{sample}.bam", sample=SAMPLES),
+        expand(config["bwa"]["dir"] + "{sample}.bam", sample=SAMPLES),
         # ------------------------------------
         # gatk_clean
         expand(config["gatk_clean"]["dir"] + "{sample}.bam", sample=SAMPLES),
@@ -382,7 +378,7 @@ rule bwa_mem:
         ],
         idx=rules.bwa_index.output,
     output:
-        sam=temporary(config["bwa"]["dir"] + "{sample}.sam"),
+        bam=config["bwa"]["dir"] + "{sample}.bam",
     log:
         config["bwa"]["dir"] + "log/{sample}.log",
     params:
@@ -394,48 +390,27 @@ rule bwa_mem:
     shell:
         """
         echo "##############################################"
-        echo "-----------    Running BWA Mem    ----------"
+        echo "------------    Running BWA Mem    -----------"
         echo "##############################################"
+
         bwa mem \
             -t {threads} \
             {params.extra} \
             {params.read_groups} \
             {input.idx} \
-            {input.reads} \
-            > {output.sam} \
-            2> {log}
+            {input.reads} |\
+        gatk SamFormatConverter \
+            --INPUT /dev/stdin \
+            --OUTPUT {output.bam}
         """
 
 
-# 4c) samtools - convert SAM to BAM
-# *********************************************************************
-rule samtools_sam2bam:
-    input:
-        sam=rules.bwa_mem.output.sam,
-    output:
-        bam=config["samtools_sam2bam"]["dir"] + "{sample}.bam",
-    log:
-        config["samtools_sam2bam"]["dir"] + "log/{sample}.log",
-    conda:
-        "envs/samtools.yaml"
-    shell:
-        """
-        echo "##############################################"
-        echo "------    Running Samtools Sam2Bam    ------"
-        echo "##############################################"
-
-        samtools view \
-            -Sb {input.sam} \
-            > {output.bam} \
-            2> {log}
-        """
-
-
-# 4d) gatk - clean sam file (remove artifacts in SAM/BAM files)
+# 4c) gatk - clean sam file (remove artifacts in SAM/BAM files)
+# TODO: compare to samtools fixmate
 # *********************************************************************
 rule gatk_clean:
     input:
-        bam=rules.samtools_sam2bam.output.bam,
+        bam=rules.bwa_mem.output.bam,
         genome=rules.gather_genome_data.output.genome,
     output:
         bam=config["gatk_clean"]["dir"] + "{sample}.bam",
@@ -450,6 +425,7 @@ rule gatk_clean:
         echo "##############################################"
         echo "--------    Running GATK CleanSam    --------"
         echo "##############################################"
+
         gatk --java-options "{params.java_opts}" CleanSam \
             -R {input.genome} \
             -I {input.bam} \
@@ -458,7 +434,7 @@ rule gatk_clean:
         """
 
 
-# 4e) gatk MarkDuplicatesSpark - mark duplicate reads
+# 4d) gatk MarkDuplicatesSpark - mark duplicate reads
 # TODO: replace wrapper with shell command
 # TODO: compare performance with sambamba and samblaster
 # *********************************************************************
@@ -478,7 +454,7 @@ rule gatk_markdup:
         "master/bio/gatk/markduplicatesspark"
 
 
-# 4f) samtools view - filter reads occuring in the core genome and index the bam file
+# 4e) samtools view - filter reads occuring in the core genome and index the bam file
 # *********************************************************************
 rule samtools_filter:
     input:
@@ -498,6 +474,7 @@ rule samtools_filter:
         echo "##############################################"
         echo "--------    Running Samtools View    --------"
         echo "##############################################"
+
         samtools view \
             -b \
             -h \
@@ -741,8 +718,6 @@ rule gatk_genotype_gvcfs:
 # ######################################################################
 #                      Step 7 - Variant Filtering
 # ######################################################################
-
-
 # 7a) gatk VariantSeparate - separate snps and indels
 # TODO: consider seleting mixed sites and multiallelic sites
 # *********************************************************************
@@ -881,8 +856,6 @@ rule gatk_filter_pass:
 # ######################################################################
 #                      Step 8 - Variant Annotation
 # ######################################################################
-
-
 # 8a) snpEff annotate - variant annotation and functional effect prediction
 # *********************************************************************
 rule snpeff_annotate_variants:
@@ -925,7 +898,7 @@ rule snpsift_extract_variants:
         echo "##############################################"
         echo "--------   Running SnpSift Extract   --------"
         echo "##############################################"
-
+        
         SnpSift extractFields \
             {input.vcf} \
             {params.extra} |\
