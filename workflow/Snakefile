@@ -236,6 +236,8 @@ rule gatk_genome_dict:
         genome=rules.gather_genome_data.output.genome,
     output:
         genome_dict=config["gather_genome_data"]["dict"],
+    log:
+        config["gather_genome_data"]["dir_fasta"] + "gatk_genome_dict.log",
     params:
         java_opts=config["gatk_java_opts"],
     conda:
@@ -289,7 +291,6 @@ rule bedops_gff2bed:
 
 
 # 3) trimmomatic/fastp - trim adapters and low quality bases
-# TODO: drop trim log
 # *********************************************************************
 rule trim_reads:
     input:
@@ -893,6 +894,8 @@ rule snpeff_annotate_variants:
         vcf=rules.gatk_filter_pass.output.vcf,
     output:
         vcf=config["snpeff"]["dir"] + "annotated.vcf.gz",
+    log:
+        config["snpeff"]["dir"] + "snpeff.log",
     params:
         config=config["snpeff"]["config"],
         extra=config["snpeff"]["extra_snpeff"],
@@ -919,6 +922,8 @@ rule snpsift_extract_variants:
         vcf=rules.snpeff_annotate_variants.output.vcf,
     output:
         variants=config["snpeff"]["dir"] + "annotated.tsv",
+    log:
+        config["snpeff"]["dir"] + "snpsift.log",
     params:
         extra=config["snpeff"]["extra_snpsift"],
     conda:
