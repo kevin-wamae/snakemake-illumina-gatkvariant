@@ -5,7 +5,7 @@
 
 # number of threads to use, whenever possible
 # ----------------------------------------------------------------
-threads: 4  # replace '4' with the number of threads you want to use
+threads: 6  # replace '4' with the number of threads you want to use
 
 
 
@@ -22,7 +22,7 @@ input:
    genome:
       fasta: output/1_snpeff_database/genomes/P.falciparum.fa            # local copy of genome fasta file
       gff: output/1_snpeff_database/P.falciparum/genes.gff               # local copy of genome gff file
-      core: input/bed/Pf3D7_core_genome.bed                              # bed file with core genome regions
+      core: input/bed/Pf3D7_core_genome.bed                              # bed file with core genome regions (10.12688/wellcomeopenres.14571.1))
       url: https://plasmodb.org/common/downloads/release-51/Pfalciparum3D7/fasta/data/PlasmoDB-51_Pfalciparum3D7_Genome.fasta  # url to download genome fasta file
 
 
@@ -65,20 +65,20 @@ bedops_gff2bed:
 # trimmomatic/fastp - clip illumina adapters, paired end mode
 # ----------------------------------------------------------------
 trim_reads:
-   dir: output/3_trimmed_fastq/         # output directory
-   trimmer: "trimmomatic"               # trimmer to use, options: {trimmomatic, fastp}
-   extra_trimmomatic:                   # See trimmomatic manual for adding additional options
+   dir: output/3_trimmed_fastq/     # output directory
+   trimmer: "fastp"                 # trimmer to use, options: {trimmomatic, fastp}
+   extra_trimmomatic:               # See trimmomatic manual for adding additional options
       - "LEADING:3"                               
       - "TRAILING:3"
-      - "SLIDINGWINDOW:4:15"            # window size:required quality
+      - "SLIDINGWINDOW:4:15"
       - "MINLEN:36"
-   extra_fastp:                         # See fastp manual for adding additional options
-      - "--cut_tail"                    # cut tail options
+   extra_fastp:                     # See fastp manual for adding additional options
+      - "--cut_tail"
       - "--cut_tail_mean_quality 20"                               
       - "--cut_tail_window_size 4"                                 
-      - "--qualified_quality_phred 15"  # quality filter options
-      - "--length_required 15"          # discard reads shorter than this
-      - "--length_limit 0"              # discard reads longer than this, 0 means no limit
+      - "--qualified_quality_phred 15"
+      - "--length_required 15"
+      - "--length_limit 0"
 
 
 
@@ -91,32 +91,36 @@ trim_reads:
 # ----------------------------------------------------------------
 bwa:
    index: output/2_genome_reference/index/genome  # genome fasta file
-   dir: output/4_mapped_reads/1_bam_files/        # output directory
+   dir: output/4_mapped_reads/a_bam_files/        # output directory
    extra:
-      - "-M"                                      # mark shorter split hits as secondary (for Picard compatibility)
-
-
-
-# samtools_sam2bam
-# ----------------------------------------------------------------
-samtools_sam2bam:
-   dir: output/4_mapped_reads/1_bam_files/  # output directory
+      - "-M"
 
 
 
 # gatk_clean
 # ----------------------------------------------------------------
-gatk_clean:
-   dir: output/4_mapped_reads/2_bam_cleaned/      # output directory
+gatk_clean_bam:
+   dir: output/4_mapped_reads/b_bam_cleaned/  # output directory
 
+
+
+# samtools fixmate
+# ----------------------------------------------------------------
+samtools_fixmate:
+   dir: output/4_mapped_reads/c_bam_fix_mate/  # output directory
+   extra:
+      - "-r"
+      - "-p"
+      - "-c"
+   
 
 
 # gatk_markdup
 # ----------------------------------------------------------------
 gatk_markdup:
-   dir: output/4_mapped_reads/3_bam_marked_duplicates/              # output directory
-   metrics: output/4_mapped_reads/3_bam_marked_duplicates/metrics/  # metrics directory
-   extra:
+   dir: output/4_mapped_reads/d_bam_marked_duplicates/              # output directory
+   metrics: output/4_mapped_reads/d_bam_marked_duplicates/metrics/  # metrics directory
+   extra:                                                           # extra options to pass to gatk
       - "--remove-all-duplicates true"
       - "--create-output-bam-index true"
 
@@ -125,7 +129,7 @@ gatk_markdup:
 # samtools_view
 # ----------------------------------------------------------------
 samtools_filter:
-   dir: output/4_mapped_reads/4_bam_filtered/      # output directory
+   dir: output/4_mapped_reads/e_bam_filtered/  # output directory
 
 
 
@@ -151,9 +155,9 @@ map_qual_stats:
 # gatk_haplotypecaller
 # ----------------------------------------------------------------
 gatk_haplotypecaller:
-   dir: output/5_variant_calling/1_gatk_haplotypecaller/      # output directory
-   erc: GVCF                                                  # Possible values: {NONE, BP_RESOLUTION, GVCF}
-   extra:                                                     # extra options to pass to gatk
+   dir: output/5_variant_calling/a_gatk_haplotypecaller/  # output directory
+   erc: GVCF                                              # Possible values: {NONE, BP_RESOLUTION, GVCF}
+   extra:                                                 # extra options to pass to gatk
       - "--emit-ref-confidence GVCF"
       - "--sample-ploidy 2"
       - "--assembly-region-padding 100"
@@ -173,13 +177,13 @@ gatk_haplotypecaller:
 # gatk_genomics_db_import
 # ----------------------------------------------------------------
 vcf_sample_name_map:
-   tsv: output/5_variant_calling/2_gatk_genomicsdb/sample_map/sample_name_map.txt  # output directory
+   tsv: output/5_variant_calling/b_gatk_genomicsdb/sample_map/sample_name_map.txt  # output directory
 
 
 
 gatk_genomicsdb:
-   dir: output/5_variant_calling/2_gatk_genomicsdb/genomicsdb  # output directory
-   extra:
+   dir: output/5_variant_calling/b_gatk_genomicsdb/genomicsdb  # output directory
+   extra:                                                      # extra options to pass to gatk
       - "--batch-size 0"
       - "--genomicsdb-segment-size 1048576"
       - "--genomicsdb-vcf-buffer-size 16384"
@@ -189,8 +193,8 @@ gatk_genomicsdb:
 # gatk_genotype_gvcfs
 # ----------------------------------------------------------------
 gatk_genotype_gvcfs:
-   dir: output/5_variant_calling/3_gatk_genotypeVCFs/  # output directory
-   extra:
+   dir: output/5_variant_calling/c_gatk_genotypeVCFs/  # output directory
+   extra:                                              # extra options to pass to gatk
       - "--genomicsdb-use-bcf-codec false"
       - "--standard-min-confidence-threshold-for-calling 30.0"
       - "--max-genotype-count 1024"
@@ -205,16 +209,16 @@ gatk_genotype_gvcfs:
 # gatk_variant_separate
 # ----------------------------------------------------------------
 gatk_var_split:
-   dir: output/6_variant_filtering/1_gatk_variants_split/     # output directory
+   dir: output/6_variant_filtering/a_gatk_variants_split/  # output directory
 
 
 
 # gatk_variant_filtration
 # ----------------------------------------------------------------
 gatk_filter_hard:
-   dir: output/6_variant_filtering/2_gatk_variants_filtered/     # output directory
-   extra_snps:
-   - '-filter "DP < 1" --filter-name "DP1"'
+   dir: output/6_variant_filtering/b_gatk_variants_filtered/     # output directory
+   extra_snps:                                                   # extra options to pass to gatk
+   - '-filter "DP < 5" --filter-name "DP5"'
    - '-filter "QD < 2.0" --filter-name "QD2"'
    - '-filter "QUAL < 30.0" --filter-name "QUAL30"'
    - '-filter "SOR > 3.0" --filter-name "SOR3"'
@@ -222,8 +226,8 @@ gatk_filter_hard:
    - '-filter "MQ < 40.0" --filter-name "MQ40"'
    - '-filter "MQRankSum < -12.5" --filter-name "MQRankSum-12.5"'
    - '-filter "ReadPosRankSum < -8.0" --filter-name "ReadPosRankSum-8"'
-   extra_indels:
-   - '-filter "DP < 1" --filter-name "DP1"'
+   extra_indels:                                                # extra options to pass to gatk
+   - '-filter "DP < 5" --filter-name "DP5"'
    - '-filter "QD < 2.0" --filter-name "QD2"'
    - '-filter "QUAL < 30.0" --filter-name "QUAL30"'
    - '-filter "FS > 200.0" --filter-name "FS200"'
@@ -234,14 +238,14 @@ gatk_filter_hard:
 # gatk_variant_filtration
 # ----------------------------------------------------------------
 gatk_merge_vcfs:
-   dir: output/6_variant_filtering/3_gatk_variants_merged/     # output directory
+   dir: output/6_variant_filtering/c_gatk_variants_merged/  # output directory
 
 
 
 # gatk_filter_pass
 # ----------------------------------------------------------------
 gatk_filter_pass:
-   dir: output/6_variant_filtering/4_gatk_variants_pass/  # output directory
+   dir: output/6_variant_filtering/d_gatk_variants_pass/  # output directory
 
 
 
@@ -254,22 +258,22 @@ gatk_filter_pass:
 # ----------------------------------------------------------------
 snpeff:
    dir: output/7_variant_annotation/  # output directory
-   config: .snpEff.config                # snpeff config file
-   database: P.falciparum                # snpeff database
-   extra_snpeff:                         # extra options to pass to snpeff
-      - "-no-downstream"                     # do not annotate downstream variants
-      - "-no-intergenic"                     # do not annotate intergenic variants
-      - "-no-intron"                         # do not annotate intronic variants
-      - "-no-upstream"                       # do not annotate upstream variants
-      - "-no-utr"                            # do not annotate UTR variants
-      - "-no SPLICE_SITE_REGION"             # do not annotate splice site variants
-      - "-hgvs1LetterAa"                     # use one-letter amino acid codes in HGVS
-      - "-noLof"                             # do not annotate loss-of-function variants
-      - "-noShiftHgvs"                       # do not annotate HGVS for shifted variants
-      - "-noMotif"                           # do not annotate regulatory features
-      - "-noInteraction"                     # do not annotate protein-protein interactions
-      - "-noStats"                           # do not annotate variant statistics
-   extra_snpsift:
+   config: .snpEff.config             # snpeff config file
+   database: P.falciparum             # snpeff database
+   extra_snpeff:                      # extra options to pass to snpeff
+      - "-no-downstream"                     
+      - "-no-intergenic"                     
+      - "-no-intron"                         
+      - "-no-upstream"                       
+      - "-no-utr"                            
+      - "-no SPLICE_SITE_REGION"             
+      - "-hgvs1LetterAa"                     
+      - "-noLof"                             
+      - "-noShiftHgvs"                       
+      - "-noMotif"                           
+      - "-noInteraction"                     
+      - "-noStats"                           
+   extra_snpsift:                     # extra options to pass to snpeff
       - CHROM
       - POS
       - REF

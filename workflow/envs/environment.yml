@@ -1,6 +1,8 @@
 name: variant-calling-gatk
 channels:
   - bioconda
+  - anaconda
 dependencies:
   - snakemake>=7.24.0
   - snpeff=5.1
+  - graphviz>=2.40.1
