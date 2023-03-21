@@ -114,7 +114,7 @@
 After navigating into the root directory of the project, run the analysis by executing the following commands in your terminal:
 
 1 - Create a conda analysis environment by running the command below in your terminal. This will create a conda environment named `variant-calling-gatk` and install [Snakemake](https://snakemake.readthedocs.io/en/stable/) and [SnpEff](https://pcingola.github.io/SnpEff/se_introduction/) in it:
-  - `conda env create --file workflow/env/environment.yml`
+  - `conda env create --file workflow/envs/environment.yaml`
   
 2 - Activate the conda environment by running the command below in your terminal. **_Note:_** This needs to be done every time you exit and restart your terminal and want re-run this pipeline
   - `conda activate variant-calling-gatk`
