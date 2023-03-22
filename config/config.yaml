@@ -22,7 +22,7 @@ input:
    genome:
       fasta: output/1_snpeff_database/genomes/P.falciparum.fa            # local copy of genome fasta file
       gff: output/1_snpeff_database/P.falciparum/genes.gff               # local copy of genome gff file
-      core: input/bed/Pf3D7_core_genome.bed                              # bed file with core genome regions (10.12688/wellcomeopenres.14571.1))
+      core: input/bed/p.falciparum_genes.bed                       # bed file with core genome regions (10.12688/wellcomeopenres.14571.1))
       url: https://plasmodb.org/common/downloads/release-51/Pfalciparum3D7/fasta/data/PlasmoDB-51_Pfalciparum3D7_Genome.fasta  # url to download genome fasta file
 
 
@@ -141,7 +141,7 @@ samtools_filter:
 # samtools_idxstats & samtools_flagstat
 # ----------------------------------------------------------------
 map_qual_stats:                         
-   dir: output/4_mapped_reads/5_mapping_statistics/  # output directory
+   dir: output/4_mapped_reads/f_mapping_statistics/  # output directory
    extra_gatk:                                       # extra options to pass to gatk
       - "--MINIMUM_PCT 0.05"
 
@@ -218,7 +218,7 @@ gatk_var_split:
 gatk_filter_hard:
    dir: output/6_variant_filtering/b_gatk_variants_filtered/     # output directory
    extra_snps:                                                   # extra options to pass to gatk
-   - '-filter "DP < 5" --filter-name "DP5"'
+   - '-filter "DP < 1" --filter-name "DP1"'
    - '-filter "QD < 2.0" --filter-name "QD2"'
    - '-filter "QUAL < 30.0" --filter-name "QUAL30"'
    - '-filter "SOR > 3.0" --filter-name "SOR3"'
@@ -227,7 +227,7 @@ gatk_filter_hard:
    - '-filter "MQRankSum < -12.5" --filter-name "MQRankSum-12.5"'
    - '-filter "ReadPosRankSum < -8.0" --filter-name "ReadPosRankSum-8"'
    extra_indels:                                                # extra options to pass to gatk
-   - '-filter "DP < 5" --filter-name "DP5"'
+   - '-filter "DP < 1" --filter-name "DP1"'
    - '-filter "QD < 2.0" --filter-name "QD2"'
    - '-filter "QUAL < 30.0" --filter-name "QUAL30"'
    - '-filter "FS > 200.0" --filter-name "FS200"'
