@@ -70,10 +70,9 @@
 - Below is the default directory structure:
     - **config/**   - contains the Conda environment-configuration files
     - **input/** - input files
-      - **bed/** - contains the bed file specifying the regions of interest
+      - **bed/** - contains the bed file for specifying the intervals of interest
       - **fastq/** - contains the FastQ files
     - **output/** - contains numbered directorie of the output from the analysis
-    - **scripts/** - contains the scripts used in the pipeline
     - **workflow/** - contains the Snakefile and:
       - **envs/** - contains the Conda environment-configuration files
       - **scripts/** - contains the scripts used in the pipeline
@@ -82,30 +81,14 @@
 ├── LICENSE
 ├── README.md
 ├── config
-│   └── config.yaml
 ├── input
 │   ├── bed
-│   │   └── Pf3D7_core_genome.bed
 │   └── fastq
-│       ├── reads_R1.fastq.gz
-│       └── reads_R2.fastq.gz
 ├── output
 └── workflow
     ├── Snakefile
     ├── envs
-    │   ├── bedops.yaml
-    │   ├── bwa.yaml
-    │   ├── environment.yml
-    │   ├── fastp.yaml
-    │   ├── gatk.yaml
-    │   ├── samtools.yaml
-    │   ├── snpeff.yaml
-    │   ├── snpsift.yaml
-    │   └── trimmomatic.yaml
     └── scripts
-        ├── fastq_rename.py
-        ├── gather_genome_files.sh
-        └── generate_sample_vcf_map.py
 ```
 
 ---
