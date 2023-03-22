@@ -316,6 +316,8 @@ rule trim_reads:
         "envs/trimmomatic.yaml" if config["trim_reads"][
         "trimmer"
         ] == "trimmomatic" else "envs/fastp.yaml"
+    message:
+        "######  RUNNING {rule} ON INPUT: {input}  ######"
     shell:
         """
         echo "##############################################"
@@ -391,6 +393,8 @@ rule bwa_mem:
     threads: config["threads"]
     conda:
         "envs/bwa.yaml"
+    message:
+        "######  RUNNING {rule} ON INPUT: {input}  ######"
     shell:
         """
         echo "##############################################"
@@ -405,7 +409,8 @@ rule bwa_mem:
             {input.reads} |\
         gatk SamFormatConverter \
             --INPUT /dev/stdin \
-            --OUTPUT {output.bam}
+            --OUTPUT {output.bam} \
+            2> {log}
         """
 
 
@@ -423,6 +428,8 @@ rule gatk_clean_bam:
         java_opts=config["gatk_java_opts"],
     conda:
         "envs/gatk.yaml"
+    message:
+        "######  RUNNING {rule} ON INPUT: {input.bam}  ######"
     shell:
         """
         echo "##############################################"
@@ -451,10 +458,12 @@ rule samtools_fixmate:
     threads: config["threads"]
     conda:
         "envs/samtools.yaml"
+    message:
+        "######  RUNNING {rule} ON INPUT: {input}  ######"
     shell:
         """
         echo "##############################################"
-        echo "--------    Running Samtools Fixmate    ------"
+        echo "-------    Running Samtools Fixmate    ------"
         echo "##############################################"
 
         samtools fixmate \
@@ -481,6 +490,8 @@ rule gatk_markdup:
         extra=config["gatk_markdup"]["extra"],
         java_opts=config["gatk_java_opts"],
     threads: config["threads"]
+    message:
+        "######  RUNNING {rule} ON INPUT: {input}  ######"
     wrapper:
         "master/bio/gatk/markduplicatesspark"
 
@@ -500,6 +511,8 @@ rule samtools_filter:
     threads: config["threads"]
     conda:
         "envs/samtools.yaml"
+    message:
+        "######  RUNNING {rule} ON INPUT: {input.bam}  ######"
     shell:
         """
         echo "##############################################"
@@ -514,6 +527,7 @@ rule samtools_filter:
             -L {input.core_genome} \
             {input.bam} \
             > {output.bam} 2> {log}
+
         samtools index {output.bam} {output.index}
         """
 
@@ -533,6 +547,8 @@ rule samtools_idxstats:
         + "samtools/idxstats/{sample}.bam.idxstats.txt",
     conda:
         "envs/samtools.yaml"
+    message:
+        "######  RUNNING {rule} ON INPUT: {input}  ######"
     shell:
         """
         echo "##############################################"
@@ -553,6 +569,8 @@ rule samtools_flagstat:
         + "samtools/flagstat/{sample}.bam.flagstat.txt",
     conda:
         "envs/samtools.yaml"
+    message:
+        "######  RUNNING {rule} ON INPUT: {input}  ######"
     shell:
         """
         echo "##############################################"
@@ -573,6 +591,8 @@ rule samtools_depth:
         depth=config["map_qual_stats"]["dir"] + "samtools/depth/{sample}.bam.depth.txt",
     conda:
         "envs/samtools.yaml"
+    message:
+        "######  RUNNING {rule} ON INPUT: {input}  ######"
     shell:
         """
         echo "##############################################"
@@ -601,6 +621,8 @@ rule gatk_insert_size_metrics:
         java_opts=config["gatk_java_opts"],
     conda:
         "envs/gatk.yaml"
+    message:
+        "######  RUNNING {rule} ON INPUT: {input.bam}  ######"
     shell:
         """
         echo "##############################################"
@@ -640,6 +662,8 @@ rule gatk_haplotypecaller:
     threads: config["threads"]
     conda:
         "envs/gatk.yaml"
+    message:
+        "######  RUNNING {rule} ON INPUT: {input.bam}  ######"
     shell:
         """
         echo "##############################################"
@@ -749,6 +773,8 @@ rule gatk_genotype_gvcfs:
 # ######################################################################
 #                      Step 7 - Variant Filtering
 # ######################################################################
+
+
 # 7a) gatk VariantSeparate - separate snps and indels
 # TODO: consider seleting mixed sites and multiallelic sites
 # *********************************************************************
@@ -887,6 +913,8 @@ rule gatk_filter_pass:
 # ######################################################################
 #                      Step 8 - Variant Annotation
 # ######################################################################
+
+
 # 8a) snpEff annotate - variant annotation and functional effect prediction
 # *********************************************************************
 rule snpeff_annotate_variants:
