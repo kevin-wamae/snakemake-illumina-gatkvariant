@@ -156,11 +156,6 @@ rule all:
             sample=SAMPLES,
         ),
         # ------------------------------------
-        # gatk_realign
-        expand(
-            config["gatk_haplotypecaller"]["dir"] + "{sample}.vcf.gz", sample=SAMPLES
-        ),
-        # ------------------------------------
         # gatk_haplotypecaller
         expand(
             config["gatk_haplotypecaller"]["dir"] + "{sample}.vcf.gz", sample=SAMPLES
@@ -475,7 +470,6 @@ rule samtools_fixmate:
 
 
 # 4e) gatk MarkDuplicatesSpark - mark duplicate reads
-# TODO: replace wrapper with shell command
 # TODO: compare performance with sambamba and samblaster
 # *********************************************************************
 rule gatk_markdup:
@@ -490,10 +484,22 @@ rule gatk_markdup:
         extra=config["gatk_markdup"]["extra"],
         java_opts=config["gatk_java_opts"],
     threads: config["threads"]
+    conda:
+        "envs/gatk.yaml"
     message:
         "######  RUNNING {rule} ON INPUT: {input}  ######"
-    wrapper:
-        "master/bio/gatk/markduplicatesspark"
+    shell:
+        """
+        echo "##############################################"
+        echo "-------    Running GATK MarkDuplicates    ---"
+        echo "##############################################"
+
+        gatk --java-options "{params.java_opts}" MarkDuplicatesSpark \
+            -I {input.bam} \
+            -O {output.bam} \
+            -M {output.metrics} \
+            2> {log}
+        """
 
 
 # 4f) samtools view - filter reads occurring in the core genome and index the bam file
@@ -874,7 +880,6 @@ rule gatk_merge_vcfs:
         echo "##############################################"
         echo "---------   Running GATK MergeVcfs   ---------"
         echo "##############################################"
-
         gatk --java-options "{params.java_opts}" MergeVcfs \
             -I {input.snps} \
             -I {input.indels} \
@@ -901,7 +906,6 @@ rule gatk_filter_pass:
         echo "##############################################"
         echo "-------   Running GATK FilterVcfPass   -------"
         echo "##############################################"
-
         gatk --java-options "{params.java_opts}" SelectVariants \
             -V {input.vcf} \
             -O {output.vcf} \
@@ -913,8 +917,6 @@ rule gatk_filter_pass:
 # ######################################################################
 #                      Step 8 - Variant Annotation
 # ######################################################################
-
-
 # 8a) snpEff annotate - variant annotation and functional effect prediction
 # *********************************************************************
 rule snpeff_annotate_variants:
@@ -935,7 +937,6 @@ rule snpeff_annotate_variants:
         echo "##############################################"
         echo "--------   Running SnpEff Annotate   --------"
         echo "##############################################"
-
         snpEff {params.extra} \
             -config {params.config} \
             {params.database} \
@@ -961,7 +962,6 @@ rule snpsift_extract_variants:
         echo "##############################################"
         echo "--------   Running SnpSift Extract   --------"
         echo "##############################################"
-
         SnpSift extractFields \
             {input.vcf} \
             {params.extra} |\
