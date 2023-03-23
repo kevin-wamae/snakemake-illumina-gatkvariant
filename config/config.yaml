@@ -11,7 +11,7 @@ threads: 4  # replace '4' with the number of threads you want to use
 
 # gatk_java_opts - memory allocation for gatk tools
 # ----------------------------------------------------------------
-gatk_java_opts:  # replace '4' with the amaount of memory you want to use
+gatk_java_opts:  # replace '4' with the amaount of memory to use
    - "-Xmx4G"    # maximum heap size
 
 
@@ -22,7 +22,7 @@ input:
    genome:
       fasta: output/1_snpeff_database/genomes/P.falciparum.fa            # local copy of genome fasta file
       gff: output/1_snpeff_database/P.falciparum/genes.gff               # local copy of genome gff file
-      core: input/bed/p.falciparum_genes.bed                       # bed file with core genome regions (10.12688/wellcomeopenres.14571.1))
+      intervals: input/bed/p.falciparum_genes.bed                             # bed file with core genome regions (10.12688/wellcomeopenres.14571.1))
       url: https://plasmodb.org/common/downloads/release-51/Pfalciparum3D7/fasta/data/PlasmoDB-51_Pfalciparum3D7_Genome.fasta  # url to download genome fasta file
 
 
@@ -127,13 +127,6 @@ mark_duplicates:
    extra_samblaster:                                                # extra options to pass to sambamba
       - "--removeDups"
       - "--addMateTags"
-   
-
-
-# samtools_view
-# ----------------------------------------------------------------
-samtools_filter:
-   dir: output/4_mapped_reads/e_bam_filtered/  # output directory
 
 
 
@@ -145,7 +138,7 @@ samtools_filter:
 # samtools_idxstats & samtools_flagstat
 # ----------------------------------------------------------------
 map_qual_stats:                         
-   dir: output/4_mapped_reads/f_mapping_statistics/  # output directory
+   dir: output/4_mapped_reads/e_mapping_statistics/  # output directory
    extra_gatk:                                       # extra options to pass to gatk
       - "--MINIMUM_PCT 0.05"
 

@@ -25,7 +25,6 @@
 # - 4c) rule gatk_clean_bam - clean sam file (remove artifacts in SAM/BAM files)
 # - 4d) rule samtools_fixmate - fix mate information
 # - 4e) rule mark_duplicates - mark duplicate reads
-# - 4f) rule samtools_filter - filter reads occurring in the core genome and index the bam file
 
 # step 5 - mapping quality statistics
 # - 5a) rule samtools_idxstats - count reads in each chromosome
@@ -116,10 +115,6 @@ rule all:
         # ------------------------------------
         # mark_duplicates
         expand(config["mark_duplicates"]["dir"] + "{sample}.bam", sample=SAMPLES),
-        # ------------------------------------
-        # samtools_filter
-        expand(config["samtools_filter"]["dir"] + "{sample}.bam", sample=SAMPLES),
-        expand(config["samtools_filter"]["dir"] + "{sample}.bam.bai", sample=SAMPLES),
         # ------------------------------------
         # samtools_idxstats
         expand(
@@ -398,11 +393,11 @@ rule bwa_mem:
             {params.extra} \
             {params.read_groups} \
             {input.idx} \
-            {input.reads} |\
+            {input.reads} 2> {log} |\
         gatk SamFormatConverter \
             --INPUT /dev/stdin \
             --OUTPUT {output.bam} \
-            2> {log}
+            2>> {log}
         """
 
 
@@ -503,51 +498,16 @@ rule mark_duplicates:
             samtools view \
                 -h {input.bam} |\
             samblaster \
-                {params.extra_samblaster} |\
+                {params.extra_samblaster} \
+                2> {log} |\
             samtools sort \
                 -@ {threads} \
                 -o {output.bam} \
-                2> {log}
+                2>> {log}
         else
             echo "Unsupported mark duplicate tool selected: {params.mark_duplicate_tool}"
             exit 1
         fi
-        """
-
-
-# 4f) samtools view - filter reads occurring in the core genome and index the bam file
-# *********************************************************************
-rule samtools_filter:
-    input:
-        bam=rules.mark_duplicates.output.bam,
-        genome=rules.gather_genome_data.output.genome,
-        core_genome=config["input"]["genome"]["core"],
-    output:
-        bam=config["samtools_filter"]["dir"] + "{sample}.bam",
-        index=config["samtools_filter"]["dir"] + "{sample}.bam.bai",
-    log:
-        config["samtools_filter"]["dir"] + "log/{sample}.log",
-    threads: config["threads"]
-    conda:
-        "envs/samtools.yaml"
-    message:
-        "######  RUNNING {rule} ON INPUT: {input.bam}  ######"
-    shell:
-        """
-        echo "##############################################"
-        echo "--------    Running Samtools View    --------"
-        echo "##############################################"
-
-        samtools view \
-            -b \
-            -h \
-            --threads {threads} \
-            --reference {input.genome} \
-            -L {input.core_genome} \
-            {input.bam} \
-            > {output.bam} 2> {log}
-
-        samtools index {output.bam} {output.index}
         """
 
 
@@ -560,7 +520,7 @@ rule samtools_filter:
 # *********************************************************************
 rule samtools_idxstats:
     input:
-        bam=rules.samtools_filter.output.bam,
+        bam=rules.mark_duplicates.output.bam,
     output:
         idxstats=config["map_qual_stats"]["dir"]
         + "samtools/idxstats/{sample}.bam.idxstats.txt",
@@ -582,7 +542,7 @@ rule samtools_idxstats:
 # *********************************************************************
 rule samtools_flagstat:
     input:
-        bam=rules.samtools_filter.output.bam,
+        bam=rules.mark_duplicates.output.bam,
     output:
         flagstat=config["map_qual_stats"]["dir"]
         + "samtools/flagstat/{sample}.bam.flagstat.txt",
@@ -605,7 +565,7 @@ rule samtools_flagstat:
 # *********************************************************************
 rule samtools_depth:
     input:
-        bam=rules.samtools_filter.output.bam,
+        bam=rules.mark_duplicates.output.bam,
     output:
         depth=config["map_qual_stats"]["dir"] + "samtools/depth/{sample}.bam.depth.txt",
     conda:
@@ -626,7 +586,7 @@ rule samtools_depth:
 # *********************************************************************
 rule gatk_insert_size_metrics:
     input:
-        bam=rules.samtools_filter.output.bam,
+        bam=rules.mark_duplicates.output.bam,
         genome=rules.gather_genome_data.output.genome,
     output:
         metrics=config["map_qual_stats"]["dir"]
@@ -665,9 +625,9 @@ rule gatk_insert_size_metrics:
 # *********************************************************************
 rule gatk_haplotypecaller:
     input:
-        bam=rules.samtools_filter.output.bam,
+        bam=rules.mark_duplicates.output.bam,
         genome=rules.gather_genome_data.output.genome,
-        intervals=config["input"]["genome"]["core"],
+        intervals=config["input"]["genome"]["intervals"],
     output:
         vcf=config["gatk_haplotypecaller"]["dir"] + "{sample}.vcf.gz",
     log:
@@ -726,7 +686,7 @@ rule gatk_genomics_db_import:
     input:
         vcfs=expand(rules.gatk_haplotypecaller.output.vcf, sample=SAMPLES),
         genome=rules.gather_genome_data.output.genome,
-        intervals=config["input"]["genome"]["core"],
+        intervals=config["input"]["genome"]["intervals"],
         sample_map=rules.generate_sample_name_map.output,
     output:
         dir=directory(config["gatk_genomicsdb"]["dir"]),
@@ -760,7 +720,7 @@ rule gatk_genotype_gvcfs:
     input:
         db=rules.gatk_genomics_db_import.output.dir,
         genome=rules.gather_genome_data.output.genome,
-        intervals=config["input"]["genome"]["core"],
+        intervals=config["input"]["genome"]["intervals"],
     output:
         vcf=config["gatk_genotype_gvcfs"]["dir"] + "genotypes.vcf.gz",
     log:
@@ -799,7 +759,7 @@ rule gatk_split_variants:
     input:
         vcf=rules.gatk_genotype_gvcfs.output.vcf,
         genome=rules.gather_genome_data.output.genome,
-        intervals=config["input"]["genome"]["core"],
+        intervals=config["input"]["genome"]["intervals"],
     output:
         snps=config["gatk_var_split"]["dir"] + "snps.vcf.gz",
         indels=config["gatk_var_split"]["dir"] + "indels.vcf.gz",
@@ -838,7 +798,7 @@ rule gatk_filter_hard:
         snps=rules.gatk_split_variants.output.snps,
         indels=rules.gatk_split_variants.output.indels,
         genome=rules.gather_genome_data.output.genome,
-        intervals=config["input"]["genome"]["core"],
+        intervals=config["input"]["genome"]["intervals"],
     output:
         snps=config["gatk_filter_hard"]["dir"] + "snps_filtered.vcf.gz",
         indels=config["gatk_filter_hard"]["dir"] + "indels_filtered.vcf.gz",
