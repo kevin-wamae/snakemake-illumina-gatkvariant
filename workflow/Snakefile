@@ -24,7 +24,7 @@
 # - 4b) rule bwa_mem - map reads to genome
 # - 4c) rule gatk_clean_bam - clean sam file (remove artifacts in SAM/BAM files)
 # - 4d) rule samtools_fixmate - fix mate information
-# - 4e) rule gatk_markdup - mark duplicate reads
+# - 4e) rule mark_duplicates - mark duplicate reads
 # - 4f) rule samtools_filter - filter reads occurring in the core genome and index the bam file
 
 # step 5 - mapping quality statistics
@@ -114,11 +114,8 @@ rule all:
         # samtools_fixmate
         expand(config["samtools_fixmate"]["dir"] + "{sample}.bam", sample=SAMPLES),
         # ------------------------------------
-        # gatk_markdup
-        expand(config["gatk_markdup"]["dir"] + "{sample}.bam", sample=SAMPLES),
-        expand(
-            config["gatk_markdup"]["metrics"] + "{sample}.metrics.txt", sample=SAMPLES
-        ),
+        # mark_duplicates
+        expand(config["mark_duplicates"]["dir"] + "{sample}.bam", sample=SAMPLES),
         # ------------------------------------
         # samtools_filter
         expand(config["samtools_filter"]["dir"] + "{sample}.bam", sample=SAMPLES),
@@ -470,35 +467,51 @@ rule samtools_fixmate:
 
 
 # 4e) gatk MarkDuplicatesSpark - mark duplicate reads
-# TODO: compare performance with sambamba and samblaster
 # *********************************************************************
-rule gatk_markdup:
+rule mark_duplicates:
     input:
         bam=rules.samtools_fixmate.output.bam,
     output:
-        bam=config["gatk_markdup"]["dir"] + "{sample}.bam",
-        metrics=config["gatk_markdup"]["metrics"] + "{sample}.metrics.txt",
+        bam=config["mark_duplicates"]["dir"] + "{sample}.bam",
     log:
-        config["gatk_markdup"]["dir"] + "log/{sample}.log",
+        config["mark_duplicates"]["dir"] + "log/{sample}.log",
     params:
-        extra=config["gatk_markdup"]["extra"],
+        mark_duplicate_tool=config["mark_duplicates"]["tool"],
+        extra_gatk=config["mark_duplicates"]["extra_gatk"],
+        extra_samblaster=config["mark_duplicates"]["extra_samblaster"],
         java_opts=config["gatk_java_opts"],
     threads: config["threads"]
     conda:
-        "envs/gatk.yaml"
+        "envs/gatk.yaml" if config["mark_duplicates"][
+        "tool"
+        ] == "MarkDuplicatesSpark" else "envs/samblaster.yaml"
     message:
         "######  RUNNING {rule} ON INPUT: {input}  ######"
     shell:
         """
         echo "##############################################"
-        echo "-------    Running GATK MarkDuplicates    ---"
+        echo "---  Running {params.mark_duplicate_tool} ---"
         echo "##############################################"
 
-        gatk --java-options "{params.java_opts}" MarkDuplicatesSpark \
-            -I {input.bam} \
-            -O {output.bam} \
-            -M {output.metrics} \
-            2> {log}
+        if [ "{params.mark_duplicate_tool}" == "MarkDuplicatesSpark" ]; then
+            gatk --java-options "{params.java_opts}" MarkDuplicatesSpark \
+                -I {input.bam} \
+                -O {output.bam} \
+                {params.extra_gatk} \
+                2> {log}
+        elif [ "{params.mark_duplicate_tool}" == "Samblaster" ]; then
+            samtools view \
+                -h {input.bam} |\
+            samblaster \
+                {params.extra_samblaster} |\
+            samtools sort \
+                -@ {threads} \
+                -o {output.bam} \
+                2> {log}
+        else
+            echo "Unsupported mark duplicate tool selected: {params.mark_duplicate_tool}"
+            exit 1
+        fi
         """
 
 
@@ -506,7 +519,7 @@ rule gatk_markdup:
 # *********************************************************************
 rule samtools_filter:
     input:
-        bam=rules.gatk_markdup.output.bam,
+        bam=rules.mark_duplicates.output.bam,
         genome=rules.gather_genome_data.output.genome,
         core_genome=config["input"]["genome"]["core"],
     output:
@@ -560,7 +573,7 @@ rule samtools_idxstats:
         echo "##############################################"
         echo "------    Running Samtools IdxStats    ------"
         echo "##############################################"
-
+        
         samtools idxstats {input.bam} > {output.idxstats}
         """
 
@@ -582,7 +595,7 @@ rule samtools_flagstat:
         echo "##############################################"
         echo "------    Running Samtools Flagstat    ------"
         echo "##############################################"
-
+        
         samtools flagstat {input.bam} > {output.flagstat}
         """
 
@@ -604,7 +617,7 @@ rule samtools_depth:
         echo "##############################################"
         echo "------    Running Samtools Depth    ------"
         echo "##############################################"
-
+        
         samtools depth {input.bam} > {output.depth}
         """
 
@@ -634,7 +647,7 @@ rule gatk_insert_size_metrics:
         echo "##############################################"
         echo "--  Running GATK CollectInsertSizeMetrics  --"
         echo "##############################################"
-
+        
         gatk --java-options "{params.java_opts}" CollectInsertSizeMetrics \
             {params.extra} \
             -R {input.genome} \
@@ -648,8 +661,6 @@ rule gatk_insert_size_metrics:
 # ######################################################################
 #                        Step 6 - Variant Calling
 # ######################################################################
-
-
 # 6a) gatk HaplotypeCaller - call SNPs and indels via local re-assembly of haplotypes
 # *********************************************************************
 rule gatk_haplotypecaller:
@@ -675,7 +686,7 @@ rule gatk_haplotypecaller:
         echo "##############################################"
         echo "-----    Running GATK HaplotypeCaller    -----"
         echo "##############################################"
-
+        
         gatk --java-options "{params.java_opts}" HaplotypeCaller \
             --native-pair-hmm-threads {threads} \
             {params.extra} \
@@ -702,7 +713,7 @@ rule generate_sample_name_map:
         echo "##############################################"
         echo "------    Generating VCF-Sample Map    ------"
         echo "##############################################"
-
+        
         python workflow/scripts/generate_sample_vcf_map.py \
             {params.directory} \
             {output}
@@ -732,7 +743,7 @@ rule gatk_genomics_db_import:
         echo "##############################################"
         echo "----    Running GATK GenomicsDBImport    ----"
         echo "##############################################"
-
+        
         gatk --java-options "{params.java_opts}" GenomicsDBImport \
             {params.extra} \
             --reader-threads {threads} \
@@ -765,7 +776,7 @@ rule gatk_genotype_gvcfs:
         echo "##############################################"
         echo "-----     Running GATK GenotypeGVCFs     -----"
         echo "##############################################"
-
+        
         gatk --java-options "{params.java_opts}" GenotypeGVCFs \
             {params.extra} \
             -R {input.genome} \
@@ -804,7 +815,7 @@ rule gatk_split_variants:
         echo "##############################################"
         echo "-----    Running GATK SelectVariants     -----"
         echo "##############################################"
-
+        
         gatk --java-options "{params.java_opts}" SelectVariants \
             -R {input.genome} \
             -V {input.vcf} \
@@ -845,7 +856,7 @@ rule gatk_filter_hard:
         echo "##############################################"
         echo "----    Running GATK VariantFiltration    ----"
         echo "##############################################"
-
+        
         gatk --java-options "{params.java_opts}" VariantFiltration \
             {params.extra_snps} \
             -R {input.genome} \
@@ -880,6 +891,7 @@ rule gatk_merge_vcfs:
         echo "##############################################"
         echo "---------   Running GATK MergeVcfs   ---------"
         echo "##############################################"
+        
         gatk --java-options "{params.java_opts}" MergeVcfs \
             -I {input.snps} \
             -I {input.indels} \
@@ -917,6 +929,8 @@ rule gatk_filter_pass:
 # ######################################################################
 #                      Step 8 - Variant Annotation
 # ######################################################################
+
+
 # 8a) snpEff annotate - variant annotation and functional effect prediction
 # *********************************************************************
 rule snpeff_annotate_variants:
@@ -937,6 +951,7 @@ rule snpeff_annotate_variants:
         echo "##############################################"
         echo "--------   Running SnpEff Annotate   --------"
         echo "##############################################"
+        
         snpEff {params.extra} \
             -config {params.config} \
             {params.database} \
@@ -962,6 +977,7 @@ rule snpsift_extract_variants:
         echo "##############################################"
         echo "--------   Running SnpSift Extract   --------"
         echo "##############################################"
+        
         SnpSift extractFields \
             {input.vcf} \
             {params.extra} |\

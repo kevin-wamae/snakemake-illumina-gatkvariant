@@ -108,22 +108,26 @@ gatk_clean_bam:
 # ----------------------------------------------------------------
 samtools_fixmate:
    dir: output/4_mapped_reads/c_bam_fix_mate/  # output directory
-   extra:
-      - "-r"
-      - "-p"
-      - "-c"
+   extra:                                      # extra options to pass to samtools
+      - "-r"                                     # remove unmapped reads
+      - "-c"                                     # add template cigar ct tag
+      - "-m"                                     # add mate score tag
    
 
 
 # gatk_markdup
 # ----------------------------------------------------------------
-gatk_markdup:
+mark_duplicates:
+   tool: MarkDuplicatesSpark                                        # options: {MarkDuplicatesSpark, Samblaster}
    dir: output/4_mapped_reads/d_bam_marked_duplicates/              # output directory
    metrics: output/4_mapped_reads/d_bam_marked_duplicates/metrics/  # metrics directory
-   extra:                                                           # extra options to pass to gatk
+   extra_gatk:                                                      # extra options to pass to gatk
       - "--remove-all-duplicates true"
       - "--create-output-bam-index true"
-
+   extra_samblaster:                                                # extra options to pass to sambamba
+      - "--removeDups"
+      - "--addMateTags"
+   
 
 
 # samtools_view
