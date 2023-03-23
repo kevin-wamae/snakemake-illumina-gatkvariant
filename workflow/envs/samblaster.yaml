@@ -1,5 +1,5 @@
 channels:
   - bioconda
 dependencies:
-  - samblaster=0.1.26
-  - samtools
+  - bioconda::samblaster=0.1.26
+  - bioconda::samtools=1.16.1

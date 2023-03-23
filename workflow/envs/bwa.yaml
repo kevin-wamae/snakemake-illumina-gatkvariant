@@ -1,5 +1,5 @@
 channels:
-  - defaults
+  - bioconda
 dependencies:
   - bioconda::bwa>=0.7.17
   - bioconda::gatk4=4.3.0.0

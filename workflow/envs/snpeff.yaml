@@ -1,4 +1,4 @@
 channels:
-  - defaults
+  - bioconda
 dependencies:
   - bioconda::snpeff>=5.1

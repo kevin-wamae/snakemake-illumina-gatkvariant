@@ -1,5 +1,4 @@
 channels:
-  - conda-forge
   - bioconda
 dependencies:
-  - bedops=2.4.41
+  - bioconda::bedops=2.4.41

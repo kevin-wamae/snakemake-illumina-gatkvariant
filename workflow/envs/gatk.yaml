@@ -1,7 +1,6 @@
 channels:
-  - conda-forge
   - bioconda
-  - nodefaults
+  - conda-forge
 dependencies:
-  - gatk4=4.4.0.0
-  - r-base=4.2.3
+  - bioconda::gatk4=4.4.0.0
+  - conda-forge::r-base=4.2.3

@@ -3,6 +3,6 @@ channels:
   - bioconda
   - anaconda
 dependencies:
-  - snakemake>=7.24.0
-  - snpeff=5.1
-  - graphviz>=2.40.1
+  - bioconda::snakemake>=7.24.2
+  - bioconda::snpeff=5.1
+  - anaconda::graphviz>=2.40.1
