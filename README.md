@@ -29,7 +29,10 @@
   
 - The configuration file (`config/config.yaml`) specifies additional resources and can be modified to suit one's needs, such as:
   - Input files
-  - Output directories, and
+  - Output directories,
+  - The option to choose between tools, e.g.:
+    - `fastp` or `trimmomatic` for read trimming
+    - `gatk MarkDuplicatesSpark` or `samblaster` for marking duplicates
   - Other parameters, such as the number of threads to use
 
 - The pipeline also uses _`global_wildcards()`_ to match sample names and mates files in FastQ files present in the `input/`:
@@ -68,7 +71,7 @@
 
 ### **Directory structure**
 - Below is the default directory structure:
-    - **config/**   - contains the Conda environment-configuration files
+    - **config/**   - contains the Snakemake-configuration files
     - **input/** - input files
       - **bed/** - contains the bed file for specifying the intervals of interest
       - **fastq/** - contains the FastQ files
