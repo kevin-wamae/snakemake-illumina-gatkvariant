@@ -12,7 +12,7 @@ threads: 4  # replace '4' with the number of threads you want to use
 # gatk_java_opts - memory allocation for gatk tools
 # ----------------------------------------------------------------
 gatk_java_opts:  # replace '4' with the amaount of memory to use
-   - "-Xmx4G"    # maximum heap size
+   - "-Xmx2G"    # maximum heap size
 
 
 # fastq files, adapters (if needed) and genome files
@@ -73,6 +73,7 @@ trim_reads:
       - "SLIDINGWINDOW:4:15"
       - "MINLEN:36"
    extra_fastp:                     # See fastp manual for adding additional options
+      - "--detect_adapter_for_pe"
       - "--cut_tail"
       - "--cut_tail_mean_quality 20"                               
       - "--cut_tail_window_size 4"                                 

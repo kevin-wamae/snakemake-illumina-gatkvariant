@@ -322,9 +322,7 @@ rule trim_reads:
                 --unpaired1 {output.r1_unpaired} \
                 --unpaired2 {output.r2_unpaired} \
                 --json {log.json} \
-                --html {log.html} \
-                --detect_adapter_for_pe \
-                length_required=15
+                --html {log.html}
         else
             trimmomatic PE \
                 -threads {threads} \
