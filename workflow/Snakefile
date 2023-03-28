@@ -107,12 +107,6 @@ rule all:
         # bwa_mem
         expand(config["bwa"]["dir"] + "{sample}.bam", sample=SAMPLES),
         # ------------------------------------
-        # gatk_clean_bam
-        expand(config["gatk_clean_bam"]["dir"] + "{sample}.bam", sample=SAMPLES),
-        # ------------------------------------
-        # samtools_fixmate
-        expand(config["samtools_fixmate"]["dir"] + "{sample}.bam", sample=SAMPLES),
-        # ------------------------------------
         # mark_duplicates
         expand(config["mark_duplicates"]["dir"] + "{sample}.bam", sample=SAMPLES),
         # ------------------------------------
@@ -224,7 +218,7 @@ rule gatk_genome_dict:
     output:
         genome_dict=config["gather_genome_data"]["dict"],
     log:
-        config["gather_genome_data"]["dir_fasta"] + "gatk_genome_dict.log",
+        config["gather_genome_data"]["dir_fasta"] + "log/gatk_genome_dict.log",
     params:
         java_opts=config["gatk_java_opts"],
     conda:
@@ -233,7 +227,8 @@ rule gatk_genome_dict:
         """
         gatk --java-options "{params.java_opts}" CreateSequenceDictionary \
             --REFERENCE {input.genome} \
-            --OUTPUT {output.genome_dict}
+            --OUTPUT {output.genome_dict} \
+            2> {log}
         """
 
 
@@ -347,6 +342,8 @@ rule bwa_index:
         genome=rules.gather_genome_data.output.genome,
     output:
         index=touch(config["bwa"]["index"]),
+    log:
+        config["bwa"]["dir"] + "log/bwa_index.log",
     conda:
         "envs/bwa.yaml"
     shell:
@@ -355,11 +352,11 @@ rule bwa_index:
         echo "-----------    Running BWA Index    ----------"
         echo "##############################################"
 
-        bwa index -p {output.index} {input.genome}
+        bwa index -p {output.index} {input.genome} 2> {log}
         """
 
 
-# 4b) bwa mem - map reads to genome
+# 4b) bwa mem - map reads to genome then, fixmate, sam2bam, and cleansam
 # *********************************************************************
 rule bwa_mem:
     input:
@@ -368,12 +365,18 @@ rule bwa_mem:
             rules.trim_reads.output.r2,
         ],
         idx=rules.bwa_index.output,
+        genome=rules.gather_genome_data.output.genome,
     output:
         bam=config["bwa"]["dir"] + "{sample}.bam",
     log:
-        config["bwa"]["dir"] + "log/{sample}.log",
+        bwa=config["bwa"]["dir"] + "log/bwa.{sample}.log",
+        fixmate=config["bwa"]["dir"] + "log/fixmate.{sample}.log",
+        sam2bam=config["bwa"]["dir"] + "log/sam2bam.{sample}.log",
+        cleansam=config["bwa"]["dir"] + "log/cleansam.{sample}.log",
     params:
-        extra=config["bwa"]["extra"],
+        extra_bwa=config["bwa"]["extra_bwa"],
+        extra_fixmate=config["bwa"]["extra_fixmate"],
+        java_opts=config["gatk_java_opts"],
         read_groups=r"-R '@RG\tID:{sample}\tSM:{sample}'",
     threads: config["threads"]
     conda:
@@ -382,80 +385,33 @@ rule bwa_mem:
         "######  RUNNING {rule} ON INPUT: {input}  ######"
     shell:
         """
-        echo "##############################################"
-        echo "------------    Running BWA Mem    -----------"
-        echo "##############################################"
+        echo "#####################################################"
+        echo "Running BWA-> Fixmate-> SamFormatConverter-> CleanSam"
+        echo "#####################################################"
 
         bwa mem \
             -t {threads} \
-            {params.extra} \
+            {params.extra_bwa} \
             {params.read_groups} \
             {input.idx} \
-            {input.reads} 2> {log} |\
-        gatk SamFormatConverter \
+            {input.reads} \
+            2> {log.bwa} |\
+        samtools fixmate \
+            --threads {threads} \
+            {params.extra_fixmate} \
+            --output-fmt sam \
+            /dev/stdin \
+            /dev/stdout \
+            2> {log.fixmate} |\
+        gatk --java-options "{params.java_opts}" SamFormatConverter \
             --INPUT /dev/stdin \
-            --OUTPUT {output.bam} \
-            2>> {log}
-        """
-
-
-# 4c) gatk - clean sam file (remove artifacts in SAM/BAM files)
-# *********************************************************************
-rule gatk_clean_bam:
-    input:
-        bam=rules.bwa_mem.output.bam,
-        genome=rules.gather_genome_data.output.genome,
-    output:
-        bam=config["gatk_clean_bam"]["dir"] + "{sample}.bam",
-    log:
-        config["gatk_clean_bam"]["dir"] + "log/{sample}.log",
-    params:
-        java_opts=config["gatk_java_opts"],
-    conda:
-        "envs/gatk.yaml"
-    message:
-        "######  RUNNING {rule} ON INPUT: {input.bam}  ######"
-    shell:
-        """
-        echo "##############################################"
-        echo "--------    Running GATK CleanSam    --------"
-        echo "##############################################"
-
+            --OUTPUT /dev/stdout \
+            2> {log.sam2bam} |\
         gatk --java-options "{params.java_opts}" CleanSam \
             -R {input.genome} \
-            -I {input.bam} \
+            -I /dev/stdin \
             -O {output.bam} \
-            2> {log}
-        """
-
-
-# 4d) samtools fixmate - fill in mate coordinates, ISIZE and mate related flags
-# *********************************************************************
-rule samtools_fixmate:
-    input:
-        bam=rules.gatk_clean_bam.output.bam,
-    output:
-        bam=config["samtools_fixmate"]["dir"] + "{sample}.bam",
-    log:
-        config["samtools_fixmate"]["dir"] + "log/{sample}.log",
-    params:
-        extra=config["samtools_fixmate"]["extra"],
-    threads: config["threads"]
-    conda:
-        "envs/samtools.yaml"
-    message:
-        "######  RUNNING {rule} ON INPUT: {input}  ######"
-    shell:
-        """
-        echo "##############################################"
-        echo "-------    Running Samtools Fixmate    ------"
-        echo "##############################################"
-
-        samtools fixmate \
-            {input.bam} \
-            {output.bam} \
-            --threads {threads} \
-            2> {log}
+            2> {log.cleansam}
         """
 
 
@@ -463,7 +419,7 @@ rule samtools_fixmate:
 # *********************************************************************
 rule mark_duplicates:
     input:
-        bam=rules.samtools_fixmate.output.bam,
+        bam=rules.bwa_mem.output.bam,
     output:
         bam=config["mark_duplicates"]["dir"] + "{sample}.bam",
     log:
@@ -485,7 +441,6 @@ rule mark_duplicates:
         echo "##############################################"
         echo "---  Running {params.mark_duplicate_tool} ---"
         echo "##############################################"
-
         if [ "{params.mark_duplicate_tool}" == "MarkDuplicatesSpark" ]; then
             gatk --java-options "{params.java_opts}" MarkDuplicatesSpark \
                 -I {input.bam} \
@@ -619,6 +574,8 @@ rule gatk_insert_size_metrics:
 # ######################################################################
 #                        Step 6 - Variant Calling
 # ######################################################################
+
+
 # 6a) gatk HaplotypeCaller - call SNPs and indels via local re-assembly of haplotypes
 # *********************************************************************
 rule gatk_haplotypecaller:
@@ -929,7 +886,7 @@ rule snpsift_extract_variants:
     params:
         extra=config["snpeff"]["extra_snpsift"],
     conda:
-        "envs/snpsift.yaml"
+        "envs/snpeff.yaml"
     shell:
         """
         echo "##############################################"

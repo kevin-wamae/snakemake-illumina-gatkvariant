@@ -1,8 +1,3 @@
-# ################################################################
-#                        ADDTITONAL RESOURCES
-# ################################################################
-
-
 # number of threads to use, whenever possible
 # ----------------------------------------------------------------
 threads: 4  # replace '4' with the number of threads you want to use
@@ -10,19 +5,22 @@ threads: 4  # replace '4' with the number of threads you want to use
 
 
 # gatk_java_opts - memory allocation for gatk tools
+# benchmarking: https://ovarflow.readthedocs.io/en/latest/ResourceRequirements/Benchmarking/JavaXmx.html
 # ----------------------------------------------------------------
-gatk_java_opts:  # replace '4' with the amaount of memory to use
-   - "-Xmx2G"    # maximum heap size
+gatk_java_opts:                 # replace '4' with the amaount of memory to use
+   - "-Xmx4G"                   # maximum heap size
+   - "-XX:ParallelGCThreads=2"  # number of threads to use for garbage collection
+
 
 
 # fastq files, adapters (if needed) and genome files
 # ----------------------------------------------------------------
 input:
-   fastq: input/fastq/                                                   # raw fastq files
+   fastq: input/fastq/                                         # raw fastq files
    genome:
-      fasta: output/1_snpeff_database/genomes/P.falciparum.fa            # local copy of genome fasta file
-      gff: output/1_snpeff_database/P.falciparum/genes.gff               # local copy of genome gff file
-      intervals: input/bed/p.falciparum_genes.bed                             # bed file with core genome regions (10.12688/wellcomeopenres.14571.1))
+      fasta: output/1_snpeff_database/genomes/P.falciparum.fa  # local copy of genome fasta file
+      gff: output/1_snpeff_database/P.falciparum/genes.gff     # local copy of genome gff file
+      intervals: input/bed/p.falciparum_genes.bed              # bed file with core genome regions (10.12688/wellcomeopenres.14571.1))
       url: https://plasmodb.org/common/downloads/release-51/Pfalciparum3D7/fasta/data/PlasmoDB-51_Pfalciparum3D7_Genome.fasta  # url to download genome fasta file
 
 
@@ -92,40 +90,28 @@ trim_reads:
 # ----------------------------------------------------------------
 bwa:
    index: output/2_genome_reference/index/genome  # genome fasta file
-   dir: output/4_mapped_reads/a_bam_files/        # output directory
-   extra:
+   dir: output/4_mapped_reads/a_bam_clean/        # output directory
+   extra_bwa:
       - "-M"
+   extra_fixmate:
+      - "-m"
 
 
 
-# gatk_clean
-# ----------------------------------------------------------------
-gatk_clean_bam:
-   dir: output/4_mapped_reads/b_bam_cleaned/  # output directory
 
-
-
-# samtools fixmate
-# ----------------------------------------------------------------
-samtools_fixmate:
-   dir: output/4_mapped_reads/c_bam_fix_mate/  # output directory
-   extra:                                      # extra options to pass to samtools
-      - "-r"                                     # remove unmapped reads
-      - "-c"                                     # add template cigar ct tag
-      - "-m"                                     # add mate score tag
    
 
 
 # gatk_markdup
 # ----------------------------------------------------------------
 mark_duplicates:
-   tool: MarkDuplicatesSpark                                        # options: {MarkDuplicatesSpark, Samblaster}
-   dir: output/4_mapped_reads/d_bam_marked_duplicates/              # output directory
-   metrics: output/4_mapped_reads/d_bam_marked_duplicates/metrics/  # metrics directory
-   extra_gatk:                                                      # extra options to pass to gatk
+   tool: MarkDuplicatesSpark                              # options: {MarkDuplicatesSpark, Samblaster}
+   dir: output/4_mapped_reads/b_bam_markdup/              # output directory
+   metrics: output/4_mapped_reads/b_bam_markdup/metrics/  # metrics directory
+   extra_gatk:                                            # extra options to pass to gatk
       - "--remove-all-duplicates true"
       - "--create-output-bam-index true"
-   extra_samblaster:                                                # extra options to pass to sambamba
+   extra_samblaster:                                      # extra options to pass to sambamba
       - "--removeDups"
       - "--addMateTags"
 
@@ -139,8 +125,8 @@ mark_duplicates:
 # samtools_idxstats & samtools_flagstat
 # ----------------------------------------------------------------
 map_qual_stats:                         
-   dir: output/4_mapped_reads/e_mapping_statistics/  # output directory
-   extra_gatk:                                       # extra options to pass to gatk
+   dir: output/4_mapped_reads/c_bam_mapping_stats/  # output directory
+   extra_gatk:                                      # extra options to pass to gatk
       - "--MINIMUM_PCT 0.05"
 
 
@@ -211,7 +197,9 @@ gatk_var_split:
 
 
 
-# gatk_variant_filtration
+# gatk_variant_filtration, explained:
+# - https://gatk.broadinstitute.org/hc/en-us/articles/360035890471-Hard-filtering-germline-short-variants
+# - https://gatk.broadinstitute.org/hc/en-us/articles/360035531112--How-to-Filter-variants-either-with-VQSR-or-by-hard-filtering
 # ----------------------------------------------------------------
 gatk_filter_hard:
    dir: output/6_variant_filtering/b_gatk_variants_filtered/     # output directory
