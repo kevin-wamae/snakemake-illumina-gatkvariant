@@ -21,10 +21,8 @@
 
 # step 4 - map reads to genome
 # - 4a) rule bwa_index - generate bwa genome-index files for mapping
-# - 4b) rule bwa_mem - map reads to genome
-# - 4c) rule gatk_clean_bam - clean sam file (remove artifacts in SAM/BAM files)
-# - 4d) rule samtools_fixmate - fix mate information
-# - 4e) rule mark_duplicates - mark duplicate reads
+# - 4b) rule bwa_mem - map reads to genome, fixmate and remove artifacts
+# - 4c) rule mark_duplicates - mark duplicate reads
 
 # step 5 - mapping quality statistics
 # - 5a) rule samtools_idxstats - count reads in each chromosome
@@ -356,7 +354,7 @@ rule bwa_index:
         """
 
 
-# 4b) bwa mem - map reads to genome then, fixmate, sam2bam, and cleansam
+# 4b) bwa mem - map reads to genome, fixmate and remove artifacts
 # *********************************************************************
 rule bwa_mem:
     input:
@@ -415,7 +413,7 @@ rule bwa_mem:
         """
 
 
-# 4e) gatk MarkDuplicatesSpark - mark duplicate reads
+# 4c) gatk MarkDuplicatesSpark - mark duplicate reads
 # *********************************************************************
 rule mark_duplicates:
     input:
@@ -870,7 +868,9 @@ rule snpeff_annotate_variants:
         snpEff {params.extra} \
             -config {params.config} \
             {params.database} \
-            {input.vcf} | gzip > {output.vcf}
+            {input.vcf} | bgzip -c > {output.vcf}
+
+        tabix -p vcf {output.vcf}
         """
 
 

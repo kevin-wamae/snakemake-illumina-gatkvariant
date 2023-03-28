@@ -1,4 +1,6 @@
 channels:
   - bioconda
 dependencies:
-  - bioconda::snpeff>=5.1
+  - bioconda::snpeff=5.1
+  - bioconda::snpsift=5.1
+  - bioconda::htslib=1.17
