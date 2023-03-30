@@ -38,7 +38,7 @@
 - The pipeline also uses _`global_wildcards()`_ to match sample names and mates files in FastQ files present in the `input/`:
   - `reads_R1.fastq.gz` = first mate
   - `reads_R2.fastq.gz` = second mate
-  - If the user has a different naming convention (eg. [_this_](https://support.illumina.com/help/BaseSpace_OLH_009008/Content/Source/Informatics/BS/NamingConvention_FASTQ-files-swBS.htm)), they can rename the files by executing the python script in the _workflow/scripts/_ directory:
+  - If you have a different naming convention (eg. [_this_](https://support.illumina.com/help/BaseSpace_OLH_009008/Content/Source/Informatics/BS/NamingConvention_FASTQ-files-swBS.htm)), you can rename the FastQ files by executing the python script in the _workflow/scripts/_ directory:
     - `python workflow/scripts/fastq_rename.py`
   - Therefore, the user can deposit their FastQ files in the `input/fastq/` directory or edit the `config/config.yaml` file to point to the correct directory and the pipeline will automatically match the sample names and mates files
 
@@ -106,7 +106,7 @@ After navigating into the root directory of the project, run the analysis by exe
   - `conda activate variant-calling-gatk`
 
 3 - Execute the shell script below to create the SnpEff. This will download the _P. falciparum_ genome data from [PlasmoDB](https://plasmodb.org/) and create a database in the **output/** directory. **_Note:_** This is an important step because the genome-FASTA and GFF files are required for read-mapping and variant calling.
-  - `bash workflow/scripts/gather_genome_files.sh`
+  - `bash workflow/scripts/create_snpeff_db.sh`
 
 
 3 - Finally, execute the whole Snakemake pipeline by running the following command in your terminal, replace **4** with the number of CPUs you wish to use and also remember to change the number of threads in the `config/config.yaml` file:
