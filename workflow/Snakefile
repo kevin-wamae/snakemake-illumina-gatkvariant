@@ -5,46 +5,6 @@
 # TODO: include snakemake reports - https://snakemake.readthedocs.io/en/v5.32.0/snakefiles/reporting.html#snakefiles-reports
 # TODO: abide by https://snakemake.readthedocs.io/en/v5.32.0/snakefiles/deployment.html#
 
-# table of contents
-# *********************************************************************
-# step 1 - output files
-# - 1) rule all - gather all output files
-
-# step 2 - gather genome data
-# - 2a) rule gather_genome_data - download and aggregate genome data
-# - 2b) rule gatk_genome_dict - create genome dictionary
-# - 2c) rule samtools_index - index genome fasta file
-# - 2d) rule bedops_gff2bed - convert genome annotation gff to bed
-
-# step 3 - quality control
-# -  3) rule trim_reads - trim adapters and low quality bases
-
-# step 4 - map reads to genome
-# - 4a) rule bwa_index - generate bwa genome-index files for mapping
-# - 4b) rule bwa_mem - map reads to genome, fixmate and remove artifacts
-# - 4c) rule mark_duplicates - mark duplicate reads
-
-# step 5 - mapping quality statistics
-# - 5a) rule samtools_idxstats - count reads in each chromosome
-# - 5b) rule samtools_flagstats - count reads in each chromosome
-# - 5c) rule gatk_insert_size_metrics - collect insert size metrics
-
-# step 6 - variant calling
-# - 6a) rule gatk_haplotypecaller - call snps and indels via local re-assembly of haplotypes
-# - 6b) rule generate_sample_name_map - generate a map of sample names to vcf files
-# - 6c) rule gatk_genomics_db_import - merge gVCFs into one genomic database
-# - 6d) rule gatk_genotype_gvcfs - perform joint genotyping
-
-# step 7 - variant filtering
-# - 7a) rule gatk_split_variants - separate snps and indels
-# - 7b) rule gatk_filter_hard - snps and indels
-# - 7c) rule gatk_merge_vcfs - merge snps and indels
-# - 7d) rule gatk_filter_pass - exclude variants that failed filters
-
-# step 8 - variant annotation
-# - 8a) rule snpeff_annotate_variants - variant annotation and functional effect prediction
-# - 8b) gatk variantsToTable - extract vcf fields and calculate allele frequencies
-
 
 # ######################################################################
 #                              Dependencies
@@ -145,7 +105,7 @@ rule all:
             config["gatk_haplotypecaller"]["dir"] + "{sample}.vcf.gz", sample=SAMPLES
         ),
         # ------------------------------------
-        # generate_sample_name_map
+        # generate_sample_vcf_map
         config["vcf_sample_name_map"]["tsv"],
         # ------------------------------------
         # gatk_genomics_db_import
@@ -186,7 +146,7 @@ rule all:
 # TODO: include temp dir (e.g  scratch space) for gatk tools
 
 
-# 2a) genome data - download genome data
+# 2a) gather genome data - download genome data
 # *********************************************************************
 rule gather_genome_data:
     input:
@@ -561,7 +521,7 @@ rule gatk_insert_size_metrics:
         echo "##############################################"
         echo "--  Running GATK CollectInsertSizeMetrics  --"
         echo "##############################################"
-        
+
         gatk --java-options "{params.java_opts}" CollectInsertSizeMetrics \
             {params.extra} \
             -R {input.genome} \
@@ -616,7 +576,7 @@ rule gatk_haplotypecaller:
 
 # 6b) make sample vcf map (python) - generate a map of sample names to vcf files
 # *********************************************************************
-rule generate_sample_name_map:
+rule generate_sample_vcf_map:
     input:
         # this input is unused but required to make snakemake wait for the gVCFs
         expand(rules.gatk_haplotypecaller.output.vcf, sample=SAMPLES),
@@ -643,7 +603,7 @@ rule gatk_genomics_db_import:
         vcfs=expand(rules.gatk_haplotypecaller.output.vcf, sample=SAMPLES),
         genome=rules.gather_genome_data.output.genome,
         intervals=config["input"]["genome"]["intervals"],
-        sample_map=rules.generate_sample_name_map.output,
+        sample_map=rules.generate_sample_vcf_map.output,
     output:
         dir=directory(config["gatk_genomicsdb"]["dir"]),
     log:
@@ -708,7 +668,7 @@ rule gatk_genotype_gvcfs:
 # ######################################################################
 
 
-# 7a) gatk VariantSeparate - separate snps and indels
+# 7a) gatk SelectVariants - separate snps and indels into separate vcf files
 # TODO: consider seleting mixed sites and multiallelic sites
 # *********************************************************************
 rule gatk_split_variants:
@@ -748,7 +708,7 @@ rule gatk_split_variants:
         """
 
 
-# 7b) gatk VariantFiltrationHard - snps and indels
+# 7b) gatk VariantFilterHard - apply hard filters to snps and indels
 # *********************************************************************
 rule gatk_filter_hard:
     input:
@@ -790,7 +750,7 @@ rule gatk_filter_hard:
         """
 
 
-# 7c) gatk MergeVcfs - merge snps and indels
+# 7c) gatk MergeVcfs - merge snps and indels into one vcf file
 # *********************************************************************
 rule gatk_merge_vcfs:
     input:
@@ -818,7 +778,7 @@ rule gatk_merge_vcfs:
         """
 
 
-# 7d) gatk FilterPassVariants - exclude variants that failed filters
+# 7d) gatk FilterPassVariants - filter out variants that do not pass the hard filters
 # *********************************************************************
 rule gatk_filter_pass:
     input:
@@ -880,7 +840,7 @@ rule snpeff_annotate_variants:
         """
 
 
-# 8b) gatk variantsToTable - extract vcf fields and calculate allele frequencies
+# 8b) gatk variantsToTable - extract variant information into a table
 # *********************************************************************
 rule gatk_variants_to_table:
     input:
