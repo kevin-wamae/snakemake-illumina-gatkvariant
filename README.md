@@ -31,43 +31,43 @@
 - The pipeline handles paired-end reads and below are the analysis sections in the Snakefile:
 
 #### &nbsp;&nbsp;**Step 1 - output files**
-  - _**rule all**_ - gather all output files
+  - rule all - gather all output files
 
 #### &nbsp;&nbsp;**Step 2 - gather genome data**
-  - _**gather_genome_data**_: aggregate genome data from the snpeff folder
-  - _**gatk_genome_dict**_: create genome dictionary
-  - _**samtools_index**_: index the genome fasta file
-  - _**bedops_gff2bed**_: convert the genome annotation .gff to .bed file
+  - gather_genome_data: aggregate genome data from the snpeff folder
+  - gatk_genome_dict: create genome dictionary
+  - samtools_index: index the genome fasta file
+  - bedops_gff2bed: convert the genome annotation .gff to .bed file
 
 #### &nbsp;&nbsp;**Step 3 - quality control**
-  -  _**trim_reads**_: trim adapters and low quality bases using trimmomatic or fastp
+  -  trim_reads: trim adapters and low quality bases using trimmomatic or fastp
 
 #### &nbsp;&nbsp;**Step 4 - map reads to genome**
- - _**bwa_index**_: generate bwa genome-index files for mapping
- - _**bwa_mem**_: map reads to genome, fixmate, convert .sam to .bam and remove artifacts
- - _**mark_duplicates**_: mark duplicate reads using gatk MarkDuplicatesSpark or samblaster
+ - bwa_index: generate bwa genome-index files for mapping
+ - bwa_mem: map reads to genome, fixmate, convert .sam to .bam and remove artifacts
+ - mark_duplicates: mark duplicate reads using gatk MarkDuplicatesSpark or samblaster
 
 #### &nbsp;&nbsp;**Step 5 - mapping quality statistics**
-  - _**samtools_idxstats**_: calculate alignment statistics based on the reference sequence
-  - _**samtools_flagstats**_: calculates and summarizes various alignment statistics
-  - _**samtools_depth**_: calculate the depth of coverage for each position in the genome
-  - _**gatk_insert_size_metrics**_: collect insert size metrics
+  - samtools_idxstats: calculate alignment statistics based on the reference sequence
+  - samtools_flagstats: calculates and summarizes various alignment statistics
+  - samtools_depth: calculate the depth of coverage for each position in the genome
+  - gatk_insert_size_metrics: collect insert size metrics
 
 #### &nbsp;&nbsp;**Step 6 - variant calling**
-  - _**gatk_haplotypecaller**_: call snps and indels via local re-assembly of haplotypes
-  - _**generate_sample_name_map**_: generate a map of sample names to vcf files
-  - _**gatk_genomics_db_import**_: merge gVCFs into one genomic database
-  - _**gatk_genotype_gvcfs**_: perform joint genotyping
+  - gatk_haplotypecaller: call snps and indels via local re-assembly of haplotypes
+  - generate_sample_name_map: generate a map of sample names to vcf files
+  - gatk_genomics_db_import: merge gVCFs into one genomic database
+  - gatk_genotype_gvcfs: perform joint genotyping
 
 #### &nbsp;&nbsp;**Step 7 - variant filtering**
-  - _**gatk_split_variants**_: separate snps and indels into separate vcf files
-  - _**gatk_filter_hard**_: apply hard filters to snps and indels
-  - _**gatk_merge_vcfs**_: merge snps and indels into one vcf file
-  - _**gatk_filter_pass**_: filter out variants that do not pass the hard filters
+  - gatk_split_variants: separate snps and indels into separate vcf files
+  - gatk_filter_hard: apply hard filters to snps and indels
+  - gatk_merge_vcfs: merge snps and indels into one vcf file
+  - gatk_filter_pass: filter out variants that do not pass the hard filters
 
 #### &nbsp;&nbsp;**Step 8 - variant annotation and extraction**
-  - _**snpeff_annotate_variants**_: variant annotation and functional effect prediction
-  - _**gatk_variants_to_table**_: extract variant information into a table
+  - snpeff_annotate_variants: variant annotation and functional effect prediction
+  - gatk_variants_to_table: extract variant information into a table
 
 ---
 
