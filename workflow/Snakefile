@@ -43,7 +43,7 @@
 
 # step 8 - variant annotation
 # - 8a) rule snpeff_annotate_variants - variant annotation and functional effect prediction
-# - 8b) rule snpsift - extract vcf fields and calculate allele frequencies
+# - 8b) gatk variantsToTable - extract vcf fields and calculate allele frequencies
 
 
 # ######################################################################
@@ -173,9 +173,9 @@ rule all:
         # snpeff_annotate_variants
         config["snpeff"]["dir"] + "annotated.vcf.gz",
         # ------------------------------------
-        # snpsift_extract_variants
+        # gatk_variants_to_table
         config["snpeff"]["dir"] + "annotated.tsv",
-        # ------------------------------------
+        # # ------------------------------------
 
 
 # ######################################################################
@@ -271,6 +271,7 @@ rule bedops_gff2bed:
 
 
 # 3) trimmomatic/fastp - trim adapters and low quality bases
+# TODO: change message to reflect trimmer used
 # *********************************************************************
 rule trim_reads:
     input:
@@ -304,7 +305,7 @@ rule trim_reads:
         echo "------    Running Trimmomatic/Fastp    ------"
         echo "##############################################"
 
-        if [[ "{params.trimmer}" == "fastp" ]]; then
+        if [[ "{params.trimmer}" == "Fastp" ]]; then
             fastp \
                 --thread {threads} \
                 {params.opts_fastp} \
@@ -439,6 +440,7 @@ rule mark_duplicates:
         echo "##############################################"
         echo "---  Running {params.mark_duplicate_tool} ---"
         echo "##############################################"
+        
         if [ "{params.mark_duplicate_tool}" == "MarkDuplicatesSpark" ]; then
             gatk --java-options "{params.java_opts}" MarkDuplicatesSpark \
                 -I {input.bam} \
@@ -575,6 +577,7 @@ rule gatk_insert_size_metrics:
 
 
 # 6a) gatk HaplotypeCaller - call SNPs and indels via local re-assembly of haplotypes
+# TODO: consider specifying intervals for calling to speed up process
 # *********************************************************************
 rule gatk_haplotypecaller:
     input:
@@ -587,7 +590,6 @@ rule gatk_haplotypecaller:
         config["gatk_haplotypecaller"]["dir"] + "log/{sample}.log",
     params:
         java_opts=config["gatk_java_opts"],
-        erc=config["gatk_haplotypecaller"]["erc"],
         extra=config["gatk_haplotypecaller"]["extra"],
     threads: config["threads"]
     conda:
@@ -627,7 +629,7 @@ rule generate_sample_name_map:
         echo "------    Generating VCF-Sample Map    ------"
         echo "##############################################"
         
-        python workflow/scripts/generate_sample_vcf_map.py \
+        python workflow/scripts/gatk_sample_vcf_map.py \
             {params.directory} \
             {output}
         """
@@ -735,6 +737,7 @@ rule gatk_split_variants:
             -O {output.snps} \
             --select-type-to-include SNP \
             2> {log.snps}
+
         gatk --java-options "{params.java_opts}" SelectVariants \
             -R {input.genome} \
             -V {input.vcf} \
@@ -776,6 +779,7 @@ rule gatk_filter_hard:
             -V {input.snps} \
             -O {output.snps} \
             2> {log.snps}
+
         gatk --java-options "{params.java_opts}" VariantFiltration \
             {params.extra_indels} \
             -R {input.genome} \
@@ -831,6 +835,7 @@ rule gatk_filter_pass:
         echo "##############################################"
         echo "-------   Running GATK FilterVcfPass   -------"
         echo "##############################################"
+
         gatk --java-options "{params.java_opts}" SelectVariants \
             -V {input.vcf} \
             -O {output.vcf} \
@@ -852,7 +857,7 @@ rule snpeff_annotate_variants:
     output:
         vcf=config["snpeff"]["dir"] + "annotated.vcf.gz",
     log:
-        config["snpeff"]["dir"] + "snpeff.log",
+        config["snpeff"]["dir"] + "log/snpeff.log",
     params:
         config=config["snpeff"]["config"],
         extra=config["snpeff"]["extra_snpeff"],
@@ -874,47 +879,33 @@ rule snpeff_annotate_variants:
         """
 
 
-# 8b) SnpSift - extract vcf fields and calculate allele frequencies
+# 8b) gatk variantsToTable - extract vcf fields and calculate allele frequencies
 # *********************************************************************
-rule snpsift_extract_variants:
+rule gatk_variants_to_table:
     input:
         vcf=rules.snpeff_annotate_variants.output.vcf,
     output:
         variants=config["snpeff"]["dir"] + "annotated.tsv",
     log:
-        config["snpeff"]["dir"] + "snpsift.log",
+        config["snpeff"]["dir"] + "log/gatk.log",
     params:
-        extra=config["snpeff"]["extra_snpsift"],
+        java_opts=config["gatk_java_opts"],
     conda:
-        "envs/snpeff.yaml"
+        "envs/gatk.yaml"
     shell:
         """
         echo "##############################################"
-        echo "--------   Running SnpSift Extract   --------"
+        echo "------   Running GATK VariantsToTable   ------"
         echo "##############################################"
         
-        SnpSift extractFields \
-            {input.vcf} \
-            {params.extra} |\
-        awk '
-            BEGIN {{ FS=OFS="\\t" }}
-            NR == 1 {{
-                allelFreq1 = "AF_REF"
-                allelFreq2 = "AF_ALT"
-            }}
-            NR > 1 {{
-                split($12,a,",")
-                sum = a[1] + a[2]
-                if ( sum ) {{
-                    allelFreq1 = a[1] / sum
-                    allelFreq2 = a[2] / sum
-                }}
-                else {{
-                    allelFreq1 = 0
-                    allelFreq2 = 0
-                }}
-            }}
-            {{ print $0, allelFreq1, allelFreq2 }}
-            ' |\
-        sed -e 's/ANN\\[\\*\\]\\.//g' | sed -e 's/GEN\\[\\*\\]\\.//g' > {output.variants}
+        gatk --java-options "{params.java_opts}" VariantsToTable \
+            -V {input.vcf} \
+            -F CHROM \
+            -F POS \
+            -F TYPE \
+            -F ANN \
+            -GF AD \
+            -O /dev/stdout \
+            2> {log} |\
+        bash workflow/scripts/split_snpeff_ann_column.sh {output.variants}
         """

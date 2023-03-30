@@ -5,7 +5,8 @@ threads: 4  # replace '4' with the number of threads you want to use
 
 
 # gatk_java_opts - memory allocation for gatk tools
-# benchmarking: https://ovarflow.readthedocs.io/en/latest/ResourceRequirements/Benchmarking/JavaXmx.html
+# TODO: add initial memory allocation for gatk tools
+# TODO: add --spark-master local[$CPU] to gatk tools
 # ----------------------------------------------------------------
 gatk_java_opts:                 # replace '4' with the amaount of memory to use
    - "-Xmx4G"                   # maximum heap size
@@ -64,7 +65,7 @@ bedops_gff2bed:
 # ----------------------------------------------------------------
 trim_reads:
    dir: output/3_trimmed_fastq/     # output directory
-   trimmer: "fastp"                 # trimmer to use, options: {trimmomatic, fastp}
+   trimmer: "Fastp"                 # trimmer to use, options: {Trimmomatic, Fastp}
    extra_trimmomatic:               # See trimmomatic manual for adding additional options
       - "LEADING:3"                               
       - "TRAILING:3"
@@ -96,10 +97,6 @@ bwa:
    extra_fixmate:
       - "-m"
 
-
-
-
-   
 
 
 # gatk_markdup
@@ -140,7 +137,6 @@ map_qual_stats:
 # ----------------------------------------------------------------
 gatk_haplotypecaller:
    dir: output/5_variant_calling/a_gatk_haplotypecaller/  # output directory
-   erc: GVCF                                              # Possible values: {NONE, BP_RESOLUTION, GVCF}
    extra:                                                 # extra options to pass to gatk
       - "--emit-ref-confidence GVCF"
       - "--sample-ploidy 2"
@@ -240,7 +236,7 @@ gatk_filter_pass:
 # ######################################################################
 
 
-# snpeff_annotate_variants:
+# snpeff_annotate_variants
 # ----------------------------------------------------------------
 snpeff:
    dir: output/7_variant_annotation/  # output directory
@@ -248,8 +244,7 @@ snpeff:
    database: P.falciparum             # snpeff database
    extra_snpeff:                      # extra options to pass to snpeff
       - "-no-downstream"                     
-      - "-no-intergenic"                     
-      - "-no-intron"                         
+      - "-no-intergenic"                                             
       - "-no-upstream"                       
       - "-no-utr"                            
       - "-no SPLICE_SITE_REGION"             
@@ -259,16 +254,3 @@ snpeff:
       - "-noMotif"                           
       - "-noInteraction"                     
       - "-noStats"                           
-   extra_snpsift:                     # extra options to pass to snpeff
-      - CHROM
-      - POS
-      - REF
-      - ALT
-      - "ANN[*].ALLELE"
-      - "ANN[*].EFFECT"
-      - "ANN[*].GENEID"
-      - "ANN[*].HGVS_C"
-      - "ANN[*].HGVS_P"
-      - "ANN[*].CDS_POS"
-      - "ANN[*].AA_POS"
-      - "GEN[*].AD"
