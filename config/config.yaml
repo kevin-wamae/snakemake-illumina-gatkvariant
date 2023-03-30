@@ -243,14 +243,15 @@ snpeff:
    config: .snpEff.config             # snpeff config file
    database: P.falciparum             # snpeff database
    extra_snpeff:                      # extra options to pass to snpeff
-      - "-no-downstream"                     
-      - "-no-intergenic"                                             
-      - "-no-upstream"                       
-      - "-no-utr"                            
-      - "-no SPLICE_SITE_REGION"             
-      - "-hgvs1LetterAa"                     
-      - "-noLof"                             
-      - "-noShiftHgvs"                       
-      - "-noMotif"                           
-      - "-noInteraction"                     
-      - "-noStats"                           
+      - "-no-downstream"                   # do not annotate downstream variants
+      - "-no-intergenic"                 # do not annotate intergenic variants
+      - "-no-intron"                     # do not annotate intronic variants
+      - "-no-upstream"                   # do not annotate upstream variants
+      - "-no-utr"                        # do not annotate UTR variants
+      - "-no SPLICE_SITE_REGION"         # do not annotate splice site variants
+      - "-hgvs1LetterAa"                 # use one-letter amino acid codes in HGVS
+      - "-noLof"                         # do not annotate loss-of-function variants
+      - "-noShiftHgvs"                   # do not annotate HGVS for shifted variants
+      - "-noMotif"                       # do not annotate regulatory features
+      - "-noInteraction"                 # do not annotate protein-protein interactions
+      - "-noStats"                       # do not annotate varian                          
