@@ -1,75 +1,99 @@
 # **Snakemake workflow: variant calling using GATK best practices**
 
-### **Table of contents**
+## **Table of contents**
 - [**Snakemake workflow: variant calling using GATK best practices**](#snakemake-workflow-variant-calling-using-gatk-best-practices)
-    - [**Table of contents**](#table-of-contents)
-    - [**Motivation**](#motivation)
-    - [**Project dependencies:**](#project-dependencies)
-      - [     **Package management**](#-package-management)
-      - [     **Workflow management**](#-workflow-management)
-    - [**Where to start**](#where-to-start)
-    - [**Directory structure**](#directory-structure)
-    - [**Running the analysis**](#running-the-analysis)
+  - [**Table of contents**](#table-of-contents)
+  - [**Motivation**](#motivation)
+  - [**Pipeline sections**](#pipeline-sections)
+      - [  **Step 1 - output files**](#step-1---output-files)
+      - [  **Step 2 - gather genome data**](#step-2---gather-genome-data)
+      - [  **Step 3 - quality control**](#step-3---quality-control)
+      - [  **Step 4 - map reads to genome**](#step-4---map-reads-to-genome)
+      - [  **Step 5 - mapping quality statistics**](#step-5---mapping-quality-statistics)
+      - [  **Step 6 - variant calling**](#step-6---variant-calling)
+      - [  **Step 7 - variant filtering**](#step-7---variant-filtering)
+      - [  **Step 8 - variant annotation and extraction**](#step-8---variant-annotation-and-extraction)
+  - [**Project dependencies:**](#project-dependencies)
+  - [**Where to start**](#where-to-start)
+  - [**Directory structure**](#directory-structure)
+  - [**Running the analysis**](#running-the-analysis)
+  - [**Feedback and Issues**](#feedback-and-issues)
 
 
-### **Motivation**
-
+## **Motivation**
 
 - This repository contains a pipeline built with [Snakemake](https://snakemake.readthedocs.io/en/stable/) for variant calling using Illumina-generated sequences and is based on the [GATK best practices](https://gatk.broadinstitute.org/hc/en-us/articles/360035535912-Data-pre-processing-for-variant-discovery) for variant calling.
 - Additionally, this pipeline aims to reproduce a recently published pipeline that optimized the GATK4 variant calling pipeline for _Plasmodium falciparum_ ([_preprint_](10.21203/rs.3.rs-2561857/v1)). However, this is not limited to _P. falciparum_ and can be used for any organism of interest.
 - _**Note: The pipeline implements VCF hard-filtering, instead of the recommended soft-filtering via Variant Quality Score Recalibration (VQSR), which will be implemented in a future release**_.
 
 
-- The pipeline handles paired-end reads and uses the following tools:
-  - _`fastp`_ - for trimming and filtering reads
-  - _`bwa`_ - for read-mapping
-  - _`gatk`_ - for 'cleaning' BAM files, sorting, marking duplicates, and generating gVCFs and for variant calling and finally for filtering variants
-  - `samtools` and `gatk` - for generating mapping statistics
+## **Pipeline sections**
+- The pipeline handles paired-end reads and below are the analysis sections in the Snakefile:
 
-  
-- The configuration file (`config/config.yaml`) specifies additional resources and can be modified to suit one's needs, such as:
-  - Input files
-  - Output directories,
-  - The option to choose between tools, e.g.:
-    - `fastp` or `trimmomatic` for read trimming
-    - `gatk MarkDuplicatesSpark` or `samblaster` for marking duplicates
-  - Other parameters, such as the number of threads to use
+#### &nbsp;&nbsp;**Step 1 - output files**
+  - _**rule all**_ - gather all output files
 
-- The pipeline also uses _`global_wildcards()`_ to match sample names and mates files in FastQ files present in the `input/`:
-  - `reads_R1.fastq.gz` = first mate
-  - `reads_R2.fastq.gz` = second mate
-  - If you have a different naming convention (eg. [_this_](https://support.illumina.com/help/BaseSpace_OLH_009008/Content/Source/Informatics/BS/NamingConvention_FASTQ-files-swBS.htm)), you can rename the FastQ files by executing the python script in the _workflow/scripts/_ directory:
-    - `python workflow/scripts/fastq_rename.py`
-  - Therefore, the user can deposit their FastQ files in the `input/fastq/` directory or edit the `config/config.yaml` file to point to the correct directory and the pipeline will automatically match the sample names and mates files
+#### &nbsp;&nbsp;**Step 2 - gather genome data**
+  - _**gather_genome_data**_: aggregate genome data from the snpeff folder
+  - _**gatk_genome_dict**_: create genome dictionary
+  - _**samtools_index**_: index the genome fasta file
+  - _**bedops_gff2bed**_: convert the genome annotation .gff to .bed file
+
+#### &nbsp;&nbsp;**Step 3 - quality control**
+  -  _**trim_reads**_: trim adapters and low quality bases using trimmomatic or fastp
+
+#### &nbsp;&nbsp;**Step 4 - map reads to genome**
+ - _**bwa_index**_: generate bwa genome-index files for mapping
+ - _**bwa_mem**_: map reads to genome, fixmate, convert .sam to .bam and remove artifacts
+ - _**mark_duplicates**_: mark duplicate reads using gatk MarkDuplicatesSpark or samblaster
+
+#### &nbsp;&nbsp;**Step 5 - mapping quality statistics**
+  - _**samtools_idxstats**_: calculate alignment statistics based on the reference sequence
+  - _**samtools_flagstats**_: calculates and summarizes various alignment statistics
+  - _**samtools_depth**_: calculate the depth of coverage for each position in the genome
+  - _**gatk_insert_size_metrics**_: collect insert size metrics
+
+#### &nbsp;&nbsp;**Step 6 - variant calling**
+  - _**gatk_haplotypecaller**_: call snps and indels via local re-assembly of haplotypes
+  - _**generate_sample_name_map**_: generate a map of sample names to vcf files
+  - _**gatk_genomics_db_import**_: merge gVCFs into one genomic database
+  - _**gatk_genotype_gvcfs**_: perform joint genotyping
+
+#### &nbsp;&nbsp;**Step 7 - variant filtering**
+  - _**gatk_split_variants**_: separate snps and indels into separate vcf files
+  - _**gatk_filter_hard**_: apply hard filters to snps and indels
+  - _**gatk_merge_vcfs**_: merge snps and indels into one vcf file
+  - _**gatk_filter_pass**_: filter out variants that do not pass the hard filters
+
+#### &nbsp;&nbsp;**Step 8 - variant annotation and extraction**
+  - _**snpeff_annotate_variants**_: variant annotation and functional effect prediction
+  - _**gatk_variants_to_table**_: extract variant information into a table
 
 ---
 
-### **Project dependencies:**
+## **Project dependencies:**
 
-#### &nbsp;&nbsp;&nbsp;&nbsp; **Package management**
-- [conda](https://conda.io/projects/conda/en/latest/user-guide/install/index.html) - an open-source package management system and environment management system that runs on various platforms, including Windows, MacOS, Linux
+- [Conda](https://conda.io/projects/conda/en/latest/user-guide/install/index.html) - an open-source package management system and environment management system that runs on various platforms, including Windows, MacOS, Linux
 
-
-#### &nbsp;&nbsp;&nbsp;&nbsp; **Workflow management**
-- [snakemake](https://github.com/snakemake/snakemake) - a workflow management system that aims to reduce the complexity of creating workflows by providing a fast and comfortable execution environment, together with a clean and modern specification language in python style.
+- [Snakemake](https://github.com/snakemake/snakemake) - a workflow management system that aims to reduce the complexity of creating workflows by providing a fast and comfortable execution environment, together with a clean and modern specification language in python style.
 
 ---
 
-### **Where to start**
+## **Where to start**
 
-- Install conda for your operating System:
+- Install conda for your operating System (_the pipeline is currently tested on Linux and MacOS_):
   - [Linux](https://docs.conda.io/projects/conda/en/latest/user-guide/install/linux.html)
   - [MacOS](https://docs.conda.io/projects/conda/en/latest/user-guide/install/macos.html)
 - Clone this project using the following command in your terminal:
-  - `git clone https://github.com/kevin-wamae/gatk-variant-calling-hard-filter.git`
+  - `git clone https://github.com/kevin-wamae/gatk-variant-voyage.git`
 - Type the following command in your terminal to navigate into the cloned directory using the command below. This will be the root directory of the project:
-  - `cd gatk-variant-calling-hard-filter`
+  - `cd gatk-variant-voyage`
   
 - **_Note: All subsequent commands should be run from the root directory of this project. However, users can modify the scripts to their liking_**
  
  ---
 
-### **Directory structure**
+## **Directory structure**
 - Below is the default directory structure:
     - **config/**   - contains the Snakemake-configuration files
     - **input/** - input files
@@ -94,9 +118,25 @@
     └── scripts
 ```
 
+
+- The pipeline uses _`global_wildcards()`_ to match FastQ sample names and mate files `input/fastq/` directory, using the naming convention below:
+  - `reads_R1.fastq.gz` = first mate
+  - `reads_R2.fastq.gz` = second mate
+  - If you have a different naming convention (eg. [_this_](https://support.illumina.com/help/BaseSpace_OLH_009008/Content/Source/Informatics/BS/NamingConvention_FASTQ-files-swBS.htm)), you can rename the FastQ files by executing the python script in the _workflow/scripts/_ directory:
+    - `python workflow/scripts/fastq_rename.py`
+  - Therefore, the user can deposit their FastQ files in the `input/fastq/` directory or edit the `config/config.yaml` file to point to the correct directory and the pipeline will automatically match the sample names and mates files
+
+- The configuration file (`config/config.yaml`) specifies additional resources and can be modified to suit one's needs, such as:
+  - Input files
+  - Output directories,
+  - The option to choose between tools, e.g.:
+    - `fastp` or `trimmomatic` for read trimming
+    - `gatk MarkDuplicatesSpark` or `samblaster` for marking duplicates
+  - Other parameters, such as the number of threads to use
+
 ---
 
-### **Running the analysis**
+## **Running the analysis**
 After navigating into the root directory of the project, run the analysis by executing the following commands in your terminal:
 
 1 - Create a conda analysis environment by running the command below in your terminal. This will create a conda environment named `variant-calling-gatk` and install [Snakemake](https://snakemake.readthedocs.io/en/stable/) and [SnpEff](https://pcingola.github.io/SnpEff/se_introduction/) in it:
@@ -117,7 +157,10 @@ After navigating into the root directory of the project, run the analysis by exe
 5 - After the analysis is complete, you can deactivate the conda environment by running the following command to exit this conda environment:
   - `conda deactivate variant-calling-gatk`
 
+---
 
-**Report any issues or bugs by openning an issue [here](https://github.com/kevin-wamae/gatk-variant-calling-for-amplicons/issues) or contact me via email (wamaekevin[at]gmail.com)**
+## **Feedback and Issues**
+
+Report any issues or bugs by openning an issue [here](https://github.com/kevin-wamae/gatk-variant-calling-for-amplicons/issues) or contact me via email (wamaekevin[at]gmail.com)
   
  
