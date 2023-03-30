@@ -443,6 +443,7 @@ rule mark_duplicates:
         
         if [ "{params.mark_duplicate_tool}" == "MarkDuplicatesSpark" ]; then
             gatk --java-options "{params.java_opts}" MarkDuplicatesSpark \
+                --spark-master local[{threads}] \
                 -I {input.bam} \
                 -O {output.bam} \
                 {params.extra_gatk} \
