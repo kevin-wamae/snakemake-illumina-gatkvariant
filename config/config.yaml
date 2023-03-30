@@ -106,7 +106,7 @@ mark_duplicates:
    dir: output/4_mapped_reads/b_bam_markdup/              # output directory
    metrics: output/4_mapped_reads/b_bam_markdup/metrics/  # metrics directory
    extra_gatk:                                            # extra options to pass to gatk
-      - "--remove-all-duplicates true"
+      - "--remove-sequencing-duplicates"
       - "--create-output-bam-index true"
    extra_samblaster:                                      # extra options to pass to sambamba
       - "--removeDups"
