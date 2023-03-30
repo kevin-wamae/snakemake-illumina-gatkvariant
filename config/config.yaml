@@ -6,9 +6,9 @@ threads: 4  # replace '4' with the number of threads you want to use
 
 # gatk_java_opts - memory allocation for gatk tools
 # TODO: add initial memory allocation for gatk tools
-# TODO: add --spark-master local[$CPU] to gatk tools
 # ----------------------------------------------------------------
 gatk_java_opts:                 # replace '4' with the amaount of memory to use
+   - "-Xms4G"                   # initial heap size
    - "-Xmx4G"                   # maximum heap size
    - "-XX:ParallelGCThreads=2"  # number of threads to use for garbage collection
 
