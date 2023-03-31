@@ -149,12 +149,12 @@ After navigating into the root directory of the project, run the analysis by exe
   - `bash workflow/scripts/create_snpeff_db.sh`
 
 
-3 - Finally, execute the whole Snakemake pipeline by running the following command in your terminal, replace **4** with the number of CPUs you wish to use and also remember to change the number of threads in the `config/config.yaml` file:
+4 - Finally, execute the whole Snakemake pipeline by running the following command in your terminal, replace **4** with the number of CPUs you wish to use and also remember to change the number of threads in the `config/config.yaml` file:
   - `snakemake --use-conda --cores 4`
 
-4 - Look through the output files in the **output/** directory to see the results of the analysis
+5 - Look through the output files in the **output/** directory to see the results of the analysis
 
-5 - After the analysis is complete, you can deactivate the conda environment by running the following command to exit this conda environment:
+6 - After the analysis is complete, you can deactivate the conda environment by running the following command to exit this conda environment:
   - `conda deactivate variant-calling-gatk`
 
 ---
