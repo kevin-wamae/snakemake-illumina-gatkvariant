@@ -8,9 +8,9 @@ threads: 4  # replace '4' with the number of threads you want to use
 # TODO: add initial memory allocation for gatk tools
 # ----------------------------------------------------------------
 gatk_java_opts:                 # replace '4' with the amaount of memory to use
-   - "-Xms4G"                   # initial heap size
-   - "-Xmx4G"                   # maximum heap size
-   - "-XX:ParallelGCThreads=2"  # number of threads to use for garbage collection
+   - "-Xms4G"                      # initial heap size
+   - "-Xmx4G"                      # maximum heap size
+   - "-XX:ParallelGCThreads=2"     # number of threads to use for garbage collection
 
 
 
@@ -52,7 +52,7 @@ samtools_index:
 # ----------------------------------------------------------------
 bedops_gff2bed:
    bed: output/2_genome_reference/bed/genome.bed  # genome bed file
-   feature: protein_coding_gene                   # features to filter genome gff file, for read mapping
+   feature: protein_coding_gene                   # genome features to filter, e.g. {CDS, exon, mRNA, protein_coding_gene}
 
 
 
@@ -64,21 +64,21 @@ bedops_gff2bed:
 # trimmomatic/fastp - clip illumina adapters, paired end mode
 # ----------------------------------------------------------------
 trim_reads:
-   dir: output/3_trimmed_fastq/     # output directory
-   trimmer: "Fastp"                 # trimmer to use, options: {Trimmomatic, Fastp}
-   extra_trimmomatic:               # See trimmomatic manual for adding additional options
-      - "LEADING:3"                               
-      - "TRAILING:3"
-      - "SLIDINGWINDOW:4:15"
-      - "MINLEN:36"
-   extra_fastp:                     # See fastp manual for adding additional options
-      - "--detect_adapter_for_pe"
-      - "--cut_tail"
-      - "--cut_tail_mean_quality 20"                               
-      - "--cut_tail_window_size 4"                                 
-      - "--qualified_quality_phred 15"
-      - "--length_required 15"
-      - "--length_limit 0"
+   dir: output/3_trimmed_fastq/           # output directory
+   trimmer: "Fastp"                       # trimmer to use, options: {Trimmomatic, Fastp}
+   extra_trimmomatic:                     # See trimmomatic manual for adding additional options
+      - "LEADING:3"                          # trim bases from the start of a read, if below a threshold quality {default: 3}             
+      - "TRAILING:3"                         # trim bases from the end of a read, if below a threshold quality {default: 3}
+      - "SLIDINGWINDOW:4:15"                 # scan the read with a 4-base wide sliding window, cutting when the average quality per base drops below 15 {default: 4:15}
+      - "MINLEN:36"                          # drop the read if it is below this length {default: 36}
+   extra_fastp:                           # See fastp manual for adding additional options
+      - "--detect_adapter_for_pe"            # detect adapter automatically
+      - "--cut_tail"                         # cut the read by quality from the end
+      - "--cut_tail_mean_quality 20"         # the mean quality requirement option for cut_tail {default: 20}                               
+      - "--cut_tail_window_size 4"           # the window size option of cut_tail {default: 4}                             
+      - "--qualified_quality_phred 15"       # the quality value that a base is qualified {default: 15}
+      - "--length_required 15"               # read length required to remain {default: 15}
+      - "--length_limit 0"                   # if read length is longer than length_limit, it will be cut to length_limit {default: 0}
 
 
 
@@ -92,10 +92,10 @@ trim_reads:
 bwa:
    index: output/2_genome_reference/index/genome  # genome fasta file
    dir: output/4_mapped_reads/a_bam_clean/        # output directory
-   extra_bwa:
-      - "-M"
-   extra_fixmate:
-      - "-m"
+   extra_bwa:                                     # extra options to pass to bwa
+      - "-M"                                         # mark shorter split hits as secondary (for Picard compatibility)
+   extra_fixmate:                                 # extra options to pass to samtools fixmate
+      - "-m"                                         # Add mate score tag
 
 
 
@@ -106,11 +106,11 @@ mark_duplicates:
    dir: output/4_mapped_reads/b_bam_markdup/              # output directory
    metrics: output/4_mapped_reads/b_bam_markdup/metrics/  # metrics directory
    extra_gatk:                                            # extra options to pass to gatk
-      - "--remove-sequencing-duplicates"
-      - "--create-output-bam-index true"
-   extra_samblaster:                                      # extra options to pass to sambamba
-      - "--removeDups"
-      - "--addMateTags"
+      - "--remove-sequencing-duplicates"                     # remove optical/sequencing duplicates
+      - "--create-output-bam-index true"                     # create output bam index
+   extra_samblaster:                                      # extra options to pass to samblaster
+      - "--removeDups"                                       # remove duplicates
+      - "--addMateTags"                                      # add MC and MQ tags to all output paired-end SAM lines
 
 
 
@@ -124,7 +124,7 @@ mark_duplicates:
 map_qual_stats:                         
    dir: output/4_mapped_reads/c_bam_mapping_stats/  # output directory
    extra_gatk:                                      # extra options to pass to gatk
-      - "--MINIMUM_PCT 0.05"
+      - "--MINIMUM_PCT 0.05"                           # minimum percentage of reads to include in stats {default: 0.05}
 
 
 
@@ -138,19 +138,19 @@ map_qual_stats:
 gatk_haplotypecaller:
    dir: output/5_variant_calling/a_gatk_haplotypecaller/  # output directory
    extra:                                                 # extra options to pass to gatk
-      - "--emit-ref-confidence GVCF"
-      - "--sample-ploidy 2"
-      - "--assembly-region-padding 100"
-      - "--max-num-haplotypes-in-population 128"
-      - "--kmer-size 10"
-      - "--kmer-size 25"
-      - "--min-dangling-branch-length 4"
-      - "--heterozygosity 0.001"
-      - "--indel-heterozygosity 1.25E-4"
-      - "--min-assembly-region-size 50"
-      - "--min-base-quality-score 10"
-      - "--disable-read-filter null"
-      - "--base-quality-score-threshold 12"
+      - "--emit-ref-confidence GVCF"                         # mode for emitting reference confidence scores, possible values: {NONE, BP_RESOLUTION, GVCF}
+      - "--sample-ploidy 2"                                  # ploidy (no# of chromosomes per sample), for pooled data, set to number of samples in each pool * ploidy) {Default value: 2}
+      - "--assembly-region-padding 100"                      # amount of padding (in bp) to add to each side of the active region {Default value: 100}
+      - "--min-assembly-region-size 50"                      # minimum size of an assembly region {Default value: 50}
+      - "--max-num-haplotypes-in-population 128"             # maximum number of haplotypes in population {Default value: 128}
+      - "--kmer-size 10"                                     # kmer size to use in the read threading assembler {Default value: 10}
+      - "--kmer-size 25"                                     # kmer size to use in the read threading assembler {Default value: 25}
+      - "--min-dangling-branch-length 4"                     # minimum length of a dangling branch to try to recover {Default value: 4}
+      - "--heterozygosity 0.001"                             # heterozygosity for SNP and indel calling {Default value: 0.001}
+      - "--indel-heterozygosity 1.25E-4"                     # heterozygosity for indel calling {Default value: 1.25E-4}
+      - "--disable-read-filter null"                         # read filters to be disabled before analysis
+      - "--min-base-quality-score 10"                        # minimum base quality required to consider a base for calling {Default value: 10}
+      - "--base-quality-score-threshold 18"                  # base qualities below this threshold will be reduced to the minimum {Default value: 18}
 
 
 
@@ -164,20 +164,20 @@ vcf_sample_name_map:
 gatk_genomicsdb:
    dir: output/5_variant_calling/b_gatk_genomicsdb/genomicsdb  # output directory
    extra:                                                      # extra options to pass to gatk
-      - "--batch-size 0"
-      - "--genomicsdb-segment-size 1048576"
-      - "--genomicsdb-vcf-buffer-size 16384"
+      - "--batch-size 0"                                          # number of samples for which readers are open at once. provides a way to minimize memory consumption {Default value: 0}
+      - "--genomicsdb-segment-size 1048576"                       # segment size for writing to disk {Default value: 1048576}
+      - "--genomicsdb-vcf-buffer-size 16384"                      # buffer size for writing to disk {Default value: 16384}
 
 
 
 # gatk_genotype_gvcfs
 # ----------------------------------------------------------------
 gatk_genotype_gvcfs:
-   dir: output/5_variant_calling/c_gatk_genotypeVCFs/  # output directory
-   extra:                                              # extra options to pass to gatk
-      - "--genomicsdb-use-bcf-codec false"
-      - "--standard-min-confidence-threshold-for-calling 30.0"
-      - "--max-genotype-count 1024"
+   dir: output/5_variant_calling/c_gatk_genotypeVCFs/            # output directory
+   extra:                                                        # extra options to pass to gatk
+      - "--genomicsdb-use-bcf-codec false"                          # use BCF codec for GenomicsDB, instead of default VCFCodec {Default value: false}
+      - "--standard-min-confidence-threshold-for-calling 30.0"      # minimum phred-scaled confidence threshold for variant-calling {Default value: 30.0}
+      - "--max-genotype-count 1024"                                 # maximum number of genotypes to consider at any site {Default value: 1024}
 
 
 
@@ -198,18 +198,18 @@ gatk_var_split:
 # - https://gatk.broadinstitute.org/hc/en-us/articles/360035531112--How-to-Filter-variants-either-with-VQSR-or-by-hard-filtering
 # ----------------------------------------------------------------
 gatk_filter_hard:
-   dir: output/6_variant_filtering/b_gatk_variants_filtered/     # output directory
-   extra_snps:                                                   # extra options to pass to gatk
-   - '-filter "DP < 1" --filter-name "DP1"'
-   - '-filter "QD < 2.0" --filter-name "QD2"'
-   - '-filter "QUAL < 30.0" --filter-name "QUAL30"'
-   - '-filter "SOR > 3.0" --filter-name "SOR3"'
-   - '-filter "FS > 60.0" --filter-name "FS60"'
-   - '-filter "MQ < 40.0" --filter-name "MQ40"'
-   - '-filter "MQRankSum < -12.5" --filter-name "MQRankSum-12.5"'
-   - '-filter "ReadPosRankSum < -8.0" --filter-name "ReadPosRankSum-8"'
-   extra_indels:                                                # extra options to pass to gatk
-   - '-filter "DP < 1" --filter-name "DP1"'
+   dir: output/6_variant_filtering/b_gatk_variants_filtered/              # output directory
+   extra_snps:                                                            # hard filters for SNPs
+   - '-filter "DP < 1" --filter-name "DP1"'                                  # DP = total depth of reads
+   - '-filter "QD < 2.0" --filter-name "QD2"'                                # QD = variant confidence / depth
+   - '-filter "QUAL < 30.0" --filter-name "QUAL30"'                          # QUAL = phred-scaled quality score
+   - '-filter "SOR > 3.0" --filter-name "SOR3"'                              # SOR = strand bias
+   - '-filter "FS > 60.0" --filter-name "FS60"'                              # FS = phred-scaled p-value using Fisher's exact test to detect strand bias
+   - '-filter "MQ < 40.0" --filter-name "MQ40"'                              # MQ = RMS mapping quality
+   - '-filter "MQRankSum < -12.5" --filter-name "MQRankSum-12.5"'            # MQRankSum = Z-score from Wilcoxon rank sum test of Alt vs. Ref read mapping qualities
+   - '-filter "ReadPosRankSum < -8.0" --filter-name "ReadPosRankSum-8"'      # ReadPosRankSum = Z-score from Wilcoxon rank sum test of Alt vs. Ref read position bias
+   extra_indels:                                                         # hard filters for indels, see above for explanation
+   - '-filter "DP < 5000" --filter-name "DP5000"'
    - '-filter "QD < 2.0" --filter-name "QD2"'
    - '-filter "QUAL < 30.0" --filter-name "QUAL30"'
    - '-filter "FS > 200.0" --filter-name "FS200"'
@@ -243,7 +243,7 @@ snpeff:
    config: .snpEff.config             # snpeff config file
    database: P.falciparum             # snpeff database
    extra_snpeff:                      # extra options to pass to snpeff
-      - "-no-downstream"                   # do not annotate downstream variants
+      - "-no-downstream"                 # do not annotate downstream variants
       - "-no-intergenic"                 # do not annotate intergenic variants
       - "-no-intron"                     # do not annotate intronic variants
       - "-no-upstream"                   # do not annotate upstream variants
