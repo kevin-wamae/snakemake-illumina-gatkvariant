@@ -139,23 +139,28 @@
 ## **Running the analysis**
 After navigating into the root directory of the project, run the analysis by executing the following commands in your terminal:
 
-1 - Create a conda analysis environment by running the command below in your terminal. This will create a conda environment named `variant-calling-gatk` and install [Snakemake](https://snakemake.readthedocs.io/en/stable/) and [SnpEff](https://pcingola.github.io/SnpEff/se_introduction/) in it:
-  - `conda env create --file workflow/envs/environment.yaml`
+1. Create a conda analysis environment by running the command below in your terminal. This will create a conda environment named `variant-calling-gatk` and install [Snakemake](https://snakemake.readthedocs.io/en/stable/) and [SnpEff](https://pcingola.github.io/SnpEff/se_introduction/) in it:
+     - `conda env create --file workflow/envs/environment.yaml`
   
-2 - Activate the conda environment by running the command below in your terminal. **_Note:_** This needs to be done every time you exit and restart your terminal and want re-run this pipeline
-  - `conda activate variant-calling-gatk`
+2. Activate the conda environment by running the command below in your terminal. **_Note:_** This needs to be done every time you exit and restart your terminal and want re-run this pipeline
+     - `conda activate variant-calling-gatk`
 
-3 - Execute the shell script below to create the SnpEff. This will download the _P. falciparum_ genome data from [PlasmoDB](https://plasmodb.org/) and create a database in the **output/** directory. **_Note:_** This is an important step because the genome-FASTA and GFF files are required for read-mapping and variant calling.
-  - `bash workflow/scripts/create_snpeff_db.sh`
+3. Execute the shell script below to create the SnpEff. This will download the _P. falciparum_ genome data from [PlasmoDB](https://plasmodb.org/) and create a database in the **output/** directory. **_Note:_** This is an important step because the genome-FASTA and GFF files are required for read-mapping and variant calling.
+     - `bash workflow/scripts/create_snpeff_db.sh`
 
 
-4 - Finally, execute the whole Snakemake pipeline by running the following command in your terminal, replace **4** with the number of CPUs you wish to use and also remember to change the number of threads in the `config/config.yaml` file:
-  - `snakemake --use-conda --cores 4`
+4. Finally, execute the whole Snakemake pipeline by running the following command in your terminal, replace **2** with the number of CPUs you wish to use and also remember to change the number of threads in the `config/config.yaml` file:
+     - `snakemake --use-conda --cores 2`
+     - This will run the whole pipeline using 2 cores
 
-5 - Look through the output files in the **output/** directory to see the results of the analysis
+5. If you want to run multiple jobs in parallel, you can use the `--jobs` flag to specify the number of jobs to run in parallel. For example, to run 2 jobs in parallel, run the following command:
+    - `snakemake --use-conda --cores 2 --jobs 2`
+    - This will run 2 jobs in parallel, each with 2 cores
 
-6 - After the analysis is complete, you can deactivate the conda environment by running the following command to exit this conda environment:
-  - `conda deactivate variant-calling-gatk`
+6. Look through **output/** directory to view the results of the analysis
+
+7. After the analysis is complete, you can deactivate the conda environment by running the following command to exit this conda environment:
+     - `conda deactivate variant-calling-gatk`
 
 ---
 
