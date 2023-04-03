@@ -1,18 +1,28 @@
 # number of threads to use, whenever possible
 # ----------------------------------------------------------------
-threads: 4  # replace '4' with the number of threads you want to use
+threads: 2  # replace '2' with the number of threads you want to use
 
 
 
 # gatk_java_opts - memory allocation for gatk tools
-# TODO: add initial memory allocation for gatk tools
 # ----------------------------------------------------------------
 gatk_java_opts:                 # replace '4' with the amaount of memory to use
-   - "-Xms4G"                      # initial heap size
-   - "-Xmx4G"                      # maximum heap size
-   - "-XX:ParallelGCThreads=2"     # number of threads to use for garbage collection
-
-
+   general:
+      - "-Xms4G"                      # initial heap size
+      - "-Xmx4G"                      # maximum heap size
+      - "-XX:ParallelGCThreads=2"     # number of threads to use for garbage collection
+   markduplicatesspark:
+      - "-Xms4G"
+      - "-Xmx4G"     
+      - "-XX:ParallelGCThreads=2"
+   haplotypecaller:
+      - "-Xms4G"
+      - "-Xmx4G"     
+      - "-XX:ParallelGCThreads=2"
+   genotype_gvcfs:
+      - "-Xms4G"
+      - "-Xmx4G"     
+      - "-XX:ParallelGCThreads=2"
 
 # fastq files, adapters (if needed) and genome files
 # ----------------------------------------------------------------
@@ -102,7 +112,7 @@ bwa:
 # gatk_markdup
 # ----------------------------------------------------------------
 mark_duplicates:
-   tool: MarkDuplicatesSpark                              # options: {MarkDuplicatesSpark, Samblaster}
+   tool: Samblaster                              # options: {MarkDuplicatesSpark, Samblaster}
    dir: output/4_mapped_reads/b_bam_markdup/              # output directory
    metrics: output/4_mapped_reads/b_bam_markdup/metrics/  # metrics directory
    extra_gatk:                                            # extra options to pass to gatk
@@ -209,7 +219,7 @@ gatk_filter_hard:
    - '-filter "MQRankSum < -12.5" --filter-name "MQRankSum-12.5"'            # MQRankSum = Z-score from Wilcoxon rank sum test of Alt vs. Ref read mapping qualities
    - '-filter "ReadPosRankSum < -8.0" --filter-name "ReadPosRankSum-8"'      # ReadPosRankSum = Z-score from Wilcoxon rank sum test of Alt vs. Ref read position bias
    extra_indels:                                                         # hard filters for indels, see above for explanation
-   - '-filter "DP < 5000" --filter-name "DP5000"'
+   - '-filter "DP < 1" --filter-name "DP1"'
    - '-filter "QD < 2.0" --filter-name "QD2"'
    - '-filter "QUAL < 30.0" --filter-name "QUAL30"'
    - '-filter "FS > 200.0" --filter-name "FS200"'

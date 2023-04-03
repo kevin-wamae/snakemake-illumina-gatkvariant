@@ -178,7 +178,7 @@ rule gatk_genome_dict:
     log:
         config["gather_genome_data"]["dir_fasta"] + "log/gatk_genome_dict.log",
     params:
-        java_opts=config["gatk_java_opts"],
+        java_opts=config["gatk_java_opts"]["general"],
     conda:
         "envs/gatk.yaml"
     shell:
@@ -232,6 +232,7 @@ rule bedops_gff2bed:
 
 # 3) trimmomatic/fastp - trim adapters and low quality bases
 # TODO: change message to reflect trimmer used
+# TODO: add a log file for fastp
 # *********************************************************************
 rule trim_reads:
     input:
@@ -250,9 +251,9 @@ rule trim_reads:
         opts_fastp=config["trim_reads"]["extra_fastp"],
     threads: config["threads"]
     log:
-        log=config["trim_reads"]["dir"] + "log/trimmomatic/{sample}.log",
-        json=config["trim_reads"]["dir"] + "log/fastp/{sample}.json",
-        html=config["trim_reads"]["dir"] + "log/fastp/{sample}.html",
+        log=config["trim_reads"]["dir"] + "log/{sample}.log",
+        json=config["trim_reads"]["dir"] + "log/{sample}.json",
+        html=config["trim_reads"]["dir"] + "log/{sample}.html",
     conda:
         "envs/trimmomatic.yaml" if config["trim_reads"][
         "trimmer"
@@ -276,7 +277,8 @@ rule trim_reads:
                 --unpaired1 {output.r1_unpaired} \
                 --unpaired2 {output.r2_unpaired} \
                 --json {log.json} \
-                --html {log.html}
+                --html {log.html} \
+                2> {log.log}
         else
             trimmomatic PE \
                 -threads {threads} \
@@ -328,14 +330,14 @@ rule bwa_mem:
     output:
         bam=config["bwa"]["dir"] + "{sample}.bam",
     log:
-        bwa=config["bwa"]["dir"] + "log/bwa.{sample}.log",
+        bwa=config["bwa"]["dir"] + "log/bwa_mem.{sample}.log",
         fixmate=config["bwa"]["dir"] + "log/fixmate.{sample}.log",
         sam2bam=config["bwa"]["dir"] + "log/sam2bam.{sample}.log",
         cleansam=config["bwa"]["dir"] + "log/cleansam.{sample}.log",
     params:
         extra_bwa=config["bwa"]["extra_bwa"],
         extra_fixmate=config["bwa"]["extra_fixmate"],
-        java_opts=config["gatk_java_opts"],
+        java_opts=config["gatk_java_opts"]["general"],
         read_groups=r"-R '@RG\tID:{sample}\tSM:{sample}'",
     threads: config["threads"]
     conda:
@@ -375,6 +377,7 @@ rule bwa_mem:
 
 
 # 4c) gatk MarkDuplicatesSpark - mark duplicate reads
+# TODO: add support for sambamba markdup
 # *********************************************************************
 rule mark_duplicates:
     input:
@@ -387,7 +390,7 @@ rule mark_duplicates:
         mark_duplicate_tool=config["mark_duplicates"]["tool"],
         extra_gatk=config["mark_duplicates"]["extra_gatk"],
         extra_samblaster=config["mark_duplicates"]["extra_samblaster"],
-        java_opts=config["gatk_java_opts"],
+        java_opts=config["gatk_java_opts"]["markduplicatesspark"],
     threads: config["threads"]
     conda:
         "envs/gatk.yaml" if config["mark_duplicates"][
@@ -418,6 +421,7 @@ rule mark_duplicates:
                 -@ {threads} \
                 -o {output.bam} \
                 2>> {log}
+            samtools index {output.bam}
         else
             echo "Unsupported mark duplicate tool selected: {params.mark_duplicate_tool}"
             exit 1
@@ -511,7 +515,7 @@ rule gatk_insert_size_metrics:
         config["map_qual_stats"]["dir"] + "gatk/log/{sample}.log",
     params:
         extra=config["map_qual_stats"]["extra_gatk"],
-        java_opts=config["gatk_java_opts"],
+        java_opts=config["gatk_java_opts"]["general"],
     conda:
         "envs/gatk.yaml"
     message:
@@ -550,7 +554,7 @@ rule gatk_haplotypecaller:
     log:
         config["gatk_haplotypecaller"]["dir"] + "log/{sample}.log",
     params:
-        java_opts=config["gatk_java_opts"],
+        java_opts=config["gatk_java_opts"]["haplotypecaller"],
         extra=config["gatk_haplotypecaller"]["extra"],
     threads: config["threads"]
     conda:
@@ -609,7 +613,7 @@ rule gatk_genomics_db_import:
     log:
         config["gatk_genomicsdb"]["dir"] + "genomicsdb.log",
     params:
-        java_opts=config["gatk_java_opts"],
+        java_opts=config["gatk_java_opts"]["general"],
         extra=config["gatk_genomicsdb"]["extra"],
     threads: config["threads"]
     conda:
@@ -643,7 +647,7 @@ rule gatk_genotype_gvcfs:
         config["gatk_genotype_gvcfs"]["dir"] + "genotypes.log",
     params:
         extra=config["gatk_genotype_gvcfs"]["extra"],
-        java_opts=config["gatk_java_opts"],
+        java_opts=config["gatk_java_opts"]["genotype_gvcfs"],
         threads=config["threads"],
     conda:
         "envs/gatk.yaml"
@@ -683,7 +687,7 @@ rule gatk_split_variants:
         snps=config["gatk_var_split"]["dir"] + "snps.log",
         indels=config["gatk_var_split"]["dir"] + "indels.log",
     params:
-        java_opts=config["gatk_java_opts"],
+        java_opts=config["gatk_java_opts"]["general"],
     conda:
         "envs/gatk.yaml"
     shell:
@@ -723,7 +727,7 @@ rule gatk_filter_hard:
         snps=config["gatk_filter_hard"]["dir"] + "snps.log",
         indels=config["gatk_filter_hard"]["dir"] + "indels.log",
     params:
-        java_opts=config["gatk_java_opts"],
+        java_opts=config["gatk_java_opts"]["general"],
         extra_snps=config["gatk_filter_hard"]["extra_indels"],
         extra_indels=config["gatk_filter_hard"]["extra_indels"],
     conda:
@@ -761,7 +765,7 @@ rule gatk_merge_vcfs:
     log:
         config["gatk_merge_vcfs"]["dir"] + "merged.log",
     params:
-        java_opts=config["gatk_java_opts"],
+        java_opts=config["gatk_java_opts"]["general"],
     conda:
         "envs/gatk.yaml"
     shell:
@@ -788,7 +792,7 @@ rule gatk_filter_pass:
     log:
         config["gatk_filter_pass"]["dir"] + "pass.log",
     params:
-        java_opts=config["gatk_java_opts"],
+        java_opts=config["gatk_java_opts"]["general"],
     conda:
         "envs/gatk.yaml"
     shell:
@@ -850,7 +854,7 @@ rule gatk_variants_to_table:
     log:
         config["snpeff"]["dir"] + "log/gatk.log",
     params:
-        java_opts=config["gatk_java_opts"],
+        java_opts=config["gatk_java_opts"]["general"],
     conda:
         "envs/gatk.yaml"
     shell:
