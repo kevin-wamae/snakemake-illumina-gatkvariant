@@ -8,20 +8,20 @@ threads: 2  # replace '2' with the number of threads you want to use
 # ----------------------------------------------------------------
 gatk_java_opts:                 # replace '4' with the amaount of memory to use
    general:
-      - "-Xms4G"                      # initial heap size
-      - "-Xmx4G"                      # maximum heap size
+      - "-Xms2G"                      # initial heap size
+      - "-Xmx2G"                      # maximum heap size
       - "-XX:ParallelGCThreads=2"     # number of threads to use for garbage collection
    markduplicatesspark:
-      - "-Xms4G"
-      - "-Xmx4G"     
+      - "-Xms2G"
+      - "-Xmx2G"     
       - "-XX:ParallelGCThreads=2"
    haplotypecaller:
-      - "-Xms4G"
-      - "-Xmx4G"     
+      - "-Xms2G"
+      - "-Xmx2G"     
       - "-XX:ParallelGCThreads=2"
    genotype_gvcfs:
-      - "-Xms4G"
-      - "-Xmx4G"     
+      - "-Xms2G"
+      - "-Xmx2G"     
       - "-XX:ParallelGCThreads=2"
 
 # fastq files, adapters (if needed) and genome files
