@@ -166,6 +166,6 @@ After navigating into the root directory of the project, run the analysis by exe
 
 ## **Feedback and Issues**
 
-Report any issues or bugs by openning an issue [here](https://github.com/kevin-wamae/gatk-variant-calling-for-amplicons/issues) or contact me via email (wamaekevin[at]gmail.com)
+Report any issues or bugs by openning an issue [here](https://github.com/kevin-wamae/gatk-variant-voyage/issues) or contact me via email (wamaekevin[at]gmail.com)
   
  
