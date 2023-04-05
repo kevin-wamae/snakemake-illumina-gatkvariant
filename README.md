@@ -22,8 +22,8 @@
 
 ## **Motivation**
 
-- This repository contains a pipeline built with [Snakemake](https://snakemake.readthedocs.io/en/stable/) for variant calling using Illumina-generated sequences and is based on the [GATK best practices](https://gatk.broadinstitute.org/hc/en-us/articles/360035535912-Data-pre-processing-for-variant-discovery) for variant calling.
-- Additionally, this pipeline aims to reproduce a recently published pipeline that optimized the GATK4 variant calling pipeline for _Plasmodium falciparum_ ([_preprint_](10.21203/rs.3.rs-2561857/v1)). However, this is not limited to _P. falciparum_ and can be used for any organism of interest.
+- This repository contains a pipeline built with [Snakemake](https://snakemake.readthedocs.io/en/stable/) for variant calling using Illumina-generated sequences and is based on the [GATK best practices](https://gatk.broadinstitute.org/hc/en-us/articles/360035894711-About-the-GATK-Best-Practices) for variant calling.
+- Additionally, this pipeline aims to reproduce a recently published pipeline that optimized the GATK4 variant calling pipeline for _Plasmodium falciparum_ ([_preprint_](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9949269/)). However, this is not limited to _P. falciparum_ and can be used for any organism of interest.
 - _**Note: The pipeline implements VCF hard-filtering, instead of the recommended soft-filtering via Variant Quality Score Recalibration (VQSR), which will be implemented in a future release**_.
 
 
