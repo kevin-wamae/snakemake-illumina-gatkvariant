@@ -1,28 +1,30 @@
 # number of threads to use, whenever possible
 # ----------------------------------------------------------------
-threads: 2  # replace '2' with the number of threads you want to use
+threads: 4  # number of threads to use, whenever possible
 
 
 
 # gatk_java_opts - memory allocation for gatk tools
 # ----------------------------------------------------------------
-gatk_java_opts:                 # replace '4' with the amaount of memory to use
-   general:
-      - "-Xms2G"                      # initial heap size
-      - "-Xmx2G"                      # maximum heap size
-      - "-XX:ParallelGCThreads=2"     # number of threads to use for garbage collection
+gatk_java_opts:                   
+   general:                        # number of threads to use, whenever possible
+      - "-Xms4G"                   # initial heap size
+      - "-Xmx4G"                   # maximum heap size
+      - "-XX:ParallelGCThreads=2"  # number of threads to use for garbage collection
    markduplicatesspark:
-      - "-Xms2G"
-      - "-Xmx2G"     
+      - "-Xms4G"
+      - "-Xmx4G"     
       - "-XX:ParallelGCThreads=2"
    haplotypecaller:
-      - "-Xms2G"
-      - "-Xmx2G"     
+      - "-Xms4G"
+      - "-Xmx4G"     
       - "-XX:ParallelGCThreads=2"
    genotype_gvcfs:
-      - "-Xms2G"
-      - "-Xmx2G"     
+      - "-Xms4G"
+      - "-Xmx4G"     
       - "-XX:ParallelGCThreads=2"
+
+
 
 # fastq files, adapters (if needed) and genome files
 # ----------------------------------------------------------------
@@ -74,21 +76,21 @@ bedops_gff2bed:
 # trimmomatic/fastp - clip illumina adapters, paired end mode
 # ----------------------------------------------------------------
 trim_reads:
-   dir: output/3_trimmed_fastq/           # output directory
-   trimmer: "Fastp"                       # trimmer to use, options: {Trimmomatic, Fastp}
-   extra_trimmomatic:                     # See trimmomatic manual for adding additional options
-      - "LEADING:3"                          # trim bases from the start of a read, if below a threshold quality {default: 3}             
-      - "TRAILING:3"                         # trim bases from the end of a read, if below a threshold quality {default: 3}
-      - "SLIDINGWINDOW:4:15"                 # scan the read with a 4-base wide sliding window, cutting when the average quality per base drops below 15 {default: 4:15}
-      - "MINLEN:36"                          # drop the read if it is below this length {default: 36}
-   extra_fastp:                           # See fastp manual for adding additional options
-      - "--detect_adapter_for_pe"            # detect adapter automatically
-      - "--cut_tail"                         # cut the read by quality from the end
-      - "--cut_tail_mean_quality 20"         # the mean quality requirement option for cut_tail {default: 20}                               
-      - "--cut_tail_window_size 4"           # the window size option of cut_tail {default: 4}                             
-      - "--qualified_quality_phred 15"       # the quality value that a base is qualified {default: 15}
-      - "--length_required 15"               # read length required to remain {default: 15}
-      - "--length_limit 0"                   # if read length is longer than length_limit, it will be cut to length_limit {default: 0}
+   dir: output/3_trimmed_fastq/        # output directory
+   trimmer: "Fastp"                    # trimmer to use, options: {Trimmomatic, Fastp}
+   extra_trimmomatic:                  # See trimmomatic manual for adding additional options
+      - "LEADING:3"                       # trim bases from the start of a read, if below a threshold quality {default: 3}             
+      - "TRAILING:3"                      # trim bases from the end of a read, if below a threshold quality {default: 3}
+      - "SLIDINGWINDOW:4:15"              # scan the read with a 4-base wide sliding window, cutting when the average quality per base drops below 15 {default: 4:15}
+      - "MINLEN:36"                       # drop the read if it is below this length {default: 36}
+   extra_fastp:                        # See fastp manual for adding additional options
+      - "--detect_adapter_for_pe"         # detect adapter automatically
+      - "--cut_tail"                      # cut the read by quality from the end
+      - "--cut_tail_mean_quality 20"      # the mean quality requirement option for cut_tail {default: 20}                               
+      - "--cut_tail_window_size 4"        # the window size option of cut_tail {default: 4}                             
+      - "--qualified_quality_phred 15"    # the quality value that a base is qualified {default: 15}
+      - "--length_required 15"            # read length required to remain {default: 15}
+      - "--length_limit 0"                # if read length is longer than length_limit, it will be cut to length_limit {default: 0}
 
 
 
@@ -112,7 +114,7 @@ bwa:
 # gatk_markdup
 # ----------------------------------------------------------------
 mark_duplicates:
-   tool: Samblaster                              # options: {MarkDuplicatesSpark, Samblaster}
+   tool: Samblaster                                       # options: {MarkDuplicatesSpark, Samblaster}
    dir: output/4_mapped_reads/b_bam_markdup/              # output directory
    metrics: output/4_mapped_reads/b_bam_markdup/metrics/  # metrics directory
    extra_gatk:                                            # extra options to pass to gatk
