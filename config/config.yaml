@@ -77,7 +77,7 @@ bedops_gff2bed:
 # ----------------------------------------------------------------
 trim_reads:
    dir: output/3_trimmed_fastq/        # output directory
-   trimmer: "Fastp"                    # trimmer to use, options: {Trimmomatic, Fastp}
+   trimmer: "Trimmomatic"                 # trimmer to use, options: {Trimmomatic, Fastp}
    extra_trimmomatic:                  # See trimmomatic manual for adding additional options
       - "LEADING:3"                       # trim bases from the start of a read, if below a threshold quality {default: 3}             
       - "TRAILING:3"                      # trim bases from the end of a read, if below a threshold quality {default: 3}
@@ -114,7 +114,7 @@ bwa:
 # gatk_markdup
 # ----------------------------------------------------------------
 mark_duplicates:
-   tool: Samblaster                                       # options: {MarkDuplicatesSpark, Samblaster}
+   tool: MarkDuplicatesSpark                              # options: {MarkDuplicatesSpark, Samblaster}
    dir: output/4_mapped_reads/b_bam_markdup/              # output directory
    metrics: output/4_mapped_reads/b_bam_markdup/metrics/  # metrics directory
    extra_gatk:                                            # extra options to pass to gatk
@@ -266,4 +266,4 @@ snpeff:
       - "-noShiftHgvs"                   # do not annotate HGVS for shifted variants
       - "-noMotif"                       # do not annotate regulatory features
       - "-noInteraction"                 # do not annotate protein-protein interactions
-      - "-noStats"                       # do not annotate varian                          
+      - "-noStats"                       # do not create stats (summary) file
