@@ -267,3 +267,4 @@ snpeff:
       - "-noMotif"                       # do not annotate regulatory features
       - "-noInteraction"                 # do not annotate protein-protein interactions
       - "-noStats"                       # do not create stats (summary) file
+      - "-hgvsOld"                       # use old HGVS format
