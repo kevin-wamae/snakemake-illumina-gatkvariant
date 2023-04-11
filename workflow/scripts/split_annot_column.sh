@@ -29,4 +29,4 @@ NR == 1 {
     for (i = 5; i <= NF; ++i) {
         printf("%s%s", $i, (i == NF) ? "\n" : OFS)
     }
-}' > "$output_file"
+}' > /dev/stdout

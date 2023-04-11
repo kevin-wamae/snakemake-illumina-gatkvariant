@@ -136,6 +136,8 @@ rule all:
         # gatk_variants_to_table
         config["snpeff"]["dir"] + "annotated-wide.tsv",
         # ------------------------------------
+        # python_allele_frequencies
+        config["snpeff"]["dir"] + "annotated-long.tsv",
 
 
 # ######################################################################
@@ -872,4 +874,25 @@ rule gatk_variants_to_table:
             -O /dev/stdout \
             2> {log} |\
         bash workflow/scripts/split_annot_column.sh > {output.variants}
+        """
+
+
+# 8c) python allele_frequency - calculate allele frequencies
+# *********************************************************************
+rule python_allele_frequency:
+    input:
+        variants=rules.gatk_variants_to_table.output.variants,
+    output:
+        variants=config["snpeff"]["dir"] + "annotated-long.tsv",
+    log:
+        config["snpeff"]["dir"] + "log/python.log",
+    conda:
+        "envs/dask.yaml"
+    shell:
+        """
+        echo "##############################################"
+        echo "------   Running Python AlleleFrequency   ----"
+        echo "##############################################"
+        
+        python workflow/scripts/vcf_allele_frequency.py
         """
