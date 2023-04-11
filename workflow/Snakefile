@@ -134,8 +134,8 @@ rule all:
         config["snpeff"]["dir"] + "annotated.vcf.gz",
         # ------------------------------------
         # gatk_variants_to_table
-        config["snpeff"]["dir"] + "annotated.tsv",
-        # # ------------------------------------
+        config["snpeff"]["dir"] + "annotated-wide.tsv",
+        # ------------------------------------
 
 
 # ######################################################################
@@ -257,13 +257,13 @@ rule trim_reads:
     conda:
         "envs/trimmomatic.yaml" if config["trim_reads"][
         "trimmer"
-        ] == "trimmomatic" else "envs/fastp.yaml"
+        ] == "Trimmomatic" else "envs/fastp.yaml"
     message:
         "######  RUNNING {rule} ON INPUT: {input}  ######"
     shell:
         """
         echo "##############################################"
-        echo "------    Running Trimmomatic/Fastp    ------"
+        echo "-------    Running {params.trimmer}    -------"
         echo "##############################################"
 
         if [[ "{params.trimmer}" == "Fastp" ]]; then
@@ -377,7 +377,6 @@ rule bwa_mem:
 
 
 # 4c) gatk MarkDuplicatesSpark - mark duplicate reads
-# TODO: add support for sambamba markdup
 # *********************************************************************
 rule mark_duplicates:
     input:
@@ -542,7 +541,7 @@ rule gatk_insert_size_metrics:
 
 
 # 6a) gatk HaplotypeCaller - call SNPs and indels via local re-assembly of haplotypes
-# TODO: consider specifying intervals for calling to speed up process
+# TODO: consider specifying intervals for variant calling to speed up process
 # *********************************************************************
 rule gatk_haplotypecaller:
     input:
@@ -594,7 +593,7 @@ rule generate_sample_vcf_map:
         echo "------    Generating VCF-Sample Map    ------"
         echo "##############################################"
         
-        python workflow/scripts/gatk_sample_vcf_map.py \
+        python workflow/scripts/sample_vcf_map.py \
             {params.directory} \
             {output}
         """
@@ -850,7 +849,7 @@ rule gatk_variants_to_table:
     input:
         vcf=rules.snpeff_annotate_variants.output.vcf,
     output:
-        variants=config["snpeff"]["dir"] + "annotated.tsv",
+        variants=config["snpeff"]["dir"] + "annotated-wide.tsv",
     log:
         config["snpeff"]["dir"] + "log/gatk.log",
     params:
@@ -872,5 +871,5 @@ rule gatk_variants_to_table:
             -GF AD \
             -O /dev/stdout \
             2> {log} |\
-        bash workflow/scripts/split_snpeff_ann_column.sh {output.variants}
+        bash workflow/scripts/split_annot_column.sh > {output.variants}
         """
