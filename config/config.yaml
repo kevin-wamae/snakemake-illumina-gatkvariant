@@ -12,13 +12,13 @@ gatk_java_opts:
       - "-Xmx2G"                     # maximum heap size
       - "-XX:ParallelGCThreads=2"    # number of threads to use for garbage collection
    markduplicatesspark:            # https://hpc.nih.gov/training/gatk_tutorial/markdup.html#benchmarks-of-markduplicatesspark
-      - "-Xms4G"
-      - "-Xmx4G"     
-      - "-XX:ParallelGCThreads=6"
-   haplotypecaller:                # https://hpc.nih.gov/training/gatk_tutorial/haplotype-caller.html#benchmarks
       - "-Xms4G"                     # optimal mem=60G
       - "-Xmx4G"                     # optimal mem=60G
       - "-XX:ParallelGCThreads=2"    # optimal threads=16
+   haplotypecaller:                # https://hpc.nih.gov/training/gatk_tutorial/haplotype-caller.html#benchmarks
+      - "-Xms4G"                     # optimal mem=20G
+      - "-Xmx4G"                     # optimal mem=20G
+      - "-XX:ParallelGCThreads=2"    # optimal threads=2
    genomicsdb_import:              # https://hpc.nih.gov/training/gatk_tutorial/genomics-db-import.html#benchmarks-1
       - "-Xms2G"                     # optimal mem=2G
       - "-Xmx2G"                     # optimal mem=2G
