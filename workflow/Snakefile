@@ -28,12 +28,11 @@ rule all:
     input:
         # ------------------------------------
         # gather_genome_data
-        config["gather_genome_data"]["fasta"],
-        config["gather_genome_data"]["gff"],
+        config["genome_data"]["dir"] + config["genome_data"]["fasta"],
+        config["genome_data"]["dir"] + config["genome_data"]["gff"],
         # ------------------------------------
         # genome_dict
-        config["gather_genome_data"]["dict"],
-        # config["gather_genome_data"]["regions"],
+        config["genome_data"]["dir"] + config["genome_data"]["dict"],
         # ------------------------------------
         # samtools_index
         config["samtools_index"]["fasta_idx"],
@@ -155,8 +154,8 @@ rule gather_genome_data:
         genome=config["input"]["genome"]["fasta"],
         gff=config["input"]["genome"]["gff"],
     output:
-        genome=config["gather_genome_data"]["fasta"],
-        gff=config["gather_genome_data"]["gff"],
+        genome=config["genome_data"]["dir"] + config["genome_data"]["fasta"],
+        gff=config["genome_data"]["dir"] + config["genome_data"]["gff"],
     run:
         shell(  # cp - copy genome fasta file from snpeff database location
             """
@@ -176,9 +175,9 @@ rule gatk_genome_dict:
     input:
         genome=rules.gather_genome_data.output.genome,
     output:
-        genome_dict=config["gather_genome_data"]["dict"],
+        genome_dict=config["genome_data"]["dir"] + config["genome_data"]["dict"],
     log:
-        config["gather_genome_data"]["dir_fasta"] + "log/gatk_genome_dict.log",
+        config["genome_data"]["dir"] + "log/gatk_genome_dict.log",
     params:
         java_opts=config["gatk_java_opts"]["general"],
     conda:
@@ -549,7 +548,7 @@ rule gatk_haplotypecaller:
     input:
         bam=rules.mark_duplicates.output.bam,
         genome=rules.gather_genome_data.output.genome,
-        intervals=config["input"]["genome"]["intervals"],
+        intervals=config["input"]["genome"]["bed"],
     output:
         vcf=config["gatk_haplotypecaller"]["dir"] + "{sample}.vcf.gz",
     log:
@@ -607,7 +606,7 @@ rule gatk_genomics_db_import:
     input:
         vcfs=expand(rules.gatk_haplotypecaller.output.vcf, sample=SAMPLES),
         genome=rules.gather_genome_data.output.genome,
-        intervals=config["input"]["genome"]["intervals"],
+        intervals=config["input"]["genome"]["bed"],
         sample_map=rules.generate_sample_vcf_map.output,
     output:
         dir=directory(config["gatk_genomicsdb"]["dir"]),
@@ -641,7 +640,7 @@ rule gatk_genotype_gvcfs:
     input:
         db=rules.gatk_genomics_db_import.output.dir,
         genome=rules.gather_genome_data.output.genome,
-        intervals=config["input"]["genome"]["intervals"],
+        intervals=config["input"]["genome"]["bed"],
     output:
         vcf=config["gatk_genotype_gvcfs"]["dir"] + "genotypes.vcf.gz",
     log:
@@ -680,7 +679,7 @@ rule gatk_split_variants:
     input:
         vcf=rules.gatk_genotype_gvcfs.output.vcf,
         genome=rules.gather_genome_data.output.genome,
-        intervals=config["input"]["genome"]["intervals"],
+        intervals=config["input"]["genome"]["bed"],
     output:
         snps=config["gatk_var_split"]["dir"] + "snps.vcf.gz",
         indels=config["gatk_var_split"]["dir"] + "indels.vcf.gz",
@@ -720,7 +719,7 @@ rule gatk_filter_hard:
         snps=rules.gatk_split_variants.output.snps,
         indels=rules.gatk_split_variants.output.indels,
         genome=rules.gather_genome_data.output.genome,
-        intervals=config["input"]["genome"]["intervals"],
+        intervals=config["input"]["genome"]["bed"],
     output:
         snps=config["gatk_filter_hard"]["dir"] + "snps_filtered.vcf.gz",
         indels=config["gatk_filter_hard"]["dir"] + "indels_filtered.vcf.gz",
