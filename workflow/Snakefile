@@ -613,7 +613,7 @@ rule gatk_genomics_db_import:
     log:
         config["gatk_genomicsdb"]["dir"] + "genomicsdb.log",
     params:
-        java_opts=config["gatk_java_opts"]["general"],
+        java_opts=config["gatk_java_opts"]["genomicsdb_import"],
         extra=config["gatk_genomicsdb"]["extra"],
     threads: config["threads"]
     conda:
@@ -648,7 +648,6 @@ rule gatk_genotype_gvcfs:
     params:
         extra=config["gatk_genotype_gvcfs"]["extra"],
         java_opts=config["gatk_java_opts"]["genotype_gvcfs"],
-        threads=config["threads"],
     conda:
         "envs/gatk.yaml"
     shell:
@@ -893,5 +892,8 @@ rule python_allele_frequency:
         echo "------   Running Python AlleleFrequency   ----"
         echo "##############################################"
         
-        python workflow/scripts/vcf_allele_frequency.py
+        python workflow/scripts/vcf_allele_frequency.py \
+            {input.variants} \
+            {output.variants} \
+            2> {log}
         """

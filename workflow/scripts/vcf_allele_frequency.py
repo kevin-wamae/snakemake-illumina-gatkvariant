@@ -21,14 +21,23 @@
 # each variant across multiple samples.
 # ***************************************************************
 
+import argparse
 import dask.dataframe as dd
+
+
+# argparse block to parse command-line arguments
+parser = argparse.ArgumentParser(
+    description="Calculate allele frequency for genomic variants.")
+parser.add_argument("input_file", help="Input TSV file path")
+parser.add_argument("output_file", help="Output TSV file path")
+args = parser.parse_args()
 
 # ---------------------------------------------------------------
 # load the data as a Dask dataframe
 # ---------------------------------------------------------------
 
 allele_list = dd.read_csv(
-    "output/7_variant_annotation/annotated-wide.tsv", sep="\t",
+    args.input_file, sep="\t",
     dtype={
         'AA.pos': 'object',
         'Allele': 'object',
@@ -117,5 +126,5 @@ allele_freq_single_partition = allele_freq.repartition(npartitions=1)
 # Save the resulting dataframe as a TSV file with tab-separated values and no index
 # ---------------------------------------------------------------
 
-allele_freq_single_partition.loc[:, columns_to_keep].to_csv("output/7_variant_annotation/annotated-long.tsv",
+allele_freq_single_partition.loc[:, columns_to_keep].to_csv(args.output_file,
                                                             sep="\t", index=False, single_file=True)
