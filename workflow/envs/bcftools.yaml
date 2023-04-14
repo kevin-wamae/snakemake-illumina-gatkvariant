@@ -1,0 +1,6 @@
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - bioconda::bcftools=1.17
+  - conda-forge::gsl=2.7
