@@ -24,7 +24,10 @@ configfile: "config/config.yaml"
 
 # 1) gather all output files
 # *********************************************************************
+
+
 # gather output from hard or soft filtering and append to rule all
+# ---------------------------------------------------------------------
 gatk_filtering_output = (
     (
         # gatk_split_variants
@@ -60,6 +63,7 @@ gatk_filtering_output = (
 
 
 # gather output from all other rules
+# ---------------------------------------------------------------------
 rule all:
     input:
         # ------------------------------------
@@ -176,10 +180,10 @@ rule all:
         config["snpeff"]["dir"] + "annotated.vcf.gz",
         # ------------------------------------
         # gatk_variants_to_table
-        config["snpeff"]["dir"] + "annotated-wide-soft.tsv",
+        config["snpeff"]["dir"] + "annotated-wide.tsv",
         # ------------------------------------
         # python_allele_frequencies
-        config["snpeff"]["dir"] + "annotated-long-soft.tsv",
+        config["snpeff"]["dir"] + "annotated-long.tsv",
         # ------------------------------------
 
 
@@ -1124,7 +1128,7 @@ rule gatk_variants_to_table:
     input:
         vcf=rules.snpeff_annotate_variants.output.vcf,
     output:
-        variants=config["snpeff"]["dir"] + "annotated-wide-soft.tsv",
+        variants=config["snpeff"]["dir"] + "annotated-wide.tsv",
     log:
         config["snpeff"]["dir"] + "log/gatk.log",
     params:
@@ -1156,7 +1160,7 @@ rule python_allele_frequency:
     input:
         variants=rules.gatk_variants_to_table.output.variants,
     output:
-        variants=config["snpeff"]["dir"] + "annotated-long-soft.tsv",
+        variants=config["snpeff"]["dir"] + "annotated-long.tsv",
     log:
         config["snpeff"]["dir"] + "log/python.log",
     conda:
