@@ -24,16 +24,51 @@ configfile: "config/config.yaml"
 
 # 1) gather all output files
 # *********************************************************************
+# gather output from hard or soft filtering and append to rule all
+gatk_filtering_output = (
+    (
+        # gatk_split_variants
+        config["gatk_var_split"]["dir"] + "1_gatk_variants_split/snps_split.vcf.gz",
+        config["gatk_var_split"]["dir"] + "1_gatk_variants_split/indels_split.vcf.gz",
+        # gatk_filter_hard
+        config["gatk_filter_hard"]["dir"]
+        + "2_gatk_variants_filtered/snps_filtered.vcf.gz",
+        config["gatk_filter_hard"]["dir"]
+        + "2_gatk_variants_filtered/indels_filtered.vcf.gz",
+        # gatk_merge_vcfs
+        config["gatk_merge_vcfs"]["dir"] + "unfiltered.vcf.gz",
+    )
+    if config["gatk_filtering_method"] == "hard"
+    else (
+        # gatk_vqsr_indels
+        config["gatk_filter_soft"]["dir"] + "1_gatk_vsqr/indels_recal",
+        config["gatk_filter_soft"]["dir"] + "1_gatk_vsqr/indels_recal.tranches",
+        config["gatk_filter_soft"]["dir"] + "1_gatk_vsqr/indels_recal.plots.R",
+        # ------------------------------------
+        # gatk_apply_vqsr_indels
+        config["gatk_filter_soft"]["dir"] + "2_gatk_apply_vsqr/indels_filtered.vcf.gz",
+        # ------------------------------------
+        # # gatk_vqsr_snps
+        config["gatk_filter_soft"]["dir"] + "1_gatk_vsqr/snps_recal",
+        config["gatk_filter_soft"]["dir"] + "1_gatk_vsqr/snps_recal.tranches",
+        config["gatk_filter_soft"]["dir"] + "1_gatk_vsqr/snps_recal.plots.R",
+        # ------------------------------------
+        # gatk_apply_vqsr_snps
+        config["gatk_filter_soft"]["dir"] + "2_gatk_apply_vsqr/snps_filtered.vcf.gz",
+    )
+)
+
+
+# gather output from all other rules
 rule all:
     input:
         # ------------------------------------
         # gather_genome_data
-        config["gather_genome_data"]["fasta"],
-        config["gather_genome_data"]["gff"],
+        config["genome_data"]["dir"] + config["genome_data"]["fasta"],
+        config["genome_data"]["dir"] + config["genome_data"]["gff"],
         # ------------------------------------
         # genome_dict
-        config["gather_genome_data"]["dict"],
-        # config["gather_genome_data"]["regions"],
+        config["genome_data"]["dir"] + config["genome_data"]["dict"],
         # ------------------------------------
         # samtools_index
         config["samtools_index"]["fasta_idx"],
@@ -100,6 +135,18 @@ rule all:
             sample=SAMPLES,
         ),
         # ------------------------------------
+        # gatk_alignment_summary_metrics
+        expand(
+            config["map_qual_stats"]["dir"]
+            + "gatk/alignment_summary/metrics/{sample}.metrics.txt",
+            sample=SAMPLES,
+        ),
+        expand(
+            config["map_qual_stats"]["dir"]
+            + "gatk/alignment_summary/histogram/{sample}.histogram.pdf",
+            sample=SAMPLES,
+        ),
+        # ------------------------------------
         # gatk_haplotypecaller
         expand(
             config["gatk_haplotypecaller"]["dir"] + "{sample}.vcf.gz", sample=SAMPLES
@@ -116,28 +163,24 @@ rule all:
             config["gatk_genotype_gvcfs"]["dir"] + "genotypes.vcf.gz", sample=SAMPLES
         ),
         # ------------------------------------
-        # gatk_split_variants
-        config["gatk_var_split"]["dir"] + "snps.vcf.gz",
-        config["gatk_var_split"]["dir"] + "indels.vcf.gz",
+        # bcftools_normalize
+        config["bcftools"]["dir"] + "normalized.vcf.gz",
         # ------------------------------------
-        # gatk_variant_filtration
-        config["gatk_filter_hard"]["dir"] + "snps_filtered.vcf.gz",
-        config["gatk_filter_hard"]["dir"] + "indels_filtered.vcf.gz",
-        # ------------------------------------
-        # gatk_merge_vcfs
-        config["gatk_merge_vcfs"]["dir"] + "merged.vcf.gz",
+        # gatk_filtering_method {hard vs. soft}
+        *gatk_filtering_output,
         # ------------------------------------
         # gatk_filter_pass
-        config["gatk_filter_pass"]["dir"] + "pass.vcf.gz",
+        config["gatk_filter_pass"]["dir"] + "filtered.vcf.gz",
         # ------------------------------------
         # snpeff_annotate_variants
         config["snpeff"]["dir"] + "annotated.vcf.gz",
         # ------------------------------------
         # gatk_variants_to_table
-        config["snpeff"]["dir"] + "annotated-wide.tsv",
+        config["snpeff"]["dir"] + "annotated-wide-soft.tsv",
         # ------------------------------------
         # python_allele_frequencies
-        config["snpeff"]["dir"] + "annotated-long.tsv",
+        config["snpeff"]["dir"] + "annotated-long-soft.tsv",
+        # ------------------------------------
 
 
 # ######################################################################
@@ -155,8 +198,8 @@ rule gather_genome_data:
         genome=config["input"]["genome"]["fasta"],
         gff=config["input"]["genome"]["gff"],
     output:
-        genome=config["gather_genome_data"]["fasta"],
-        gff=config["gather_genome_data"]["gff"],
+        genome=config["genome_data"]["dir"] + config["genome_data"]["fasta"],
+        gff=config["genome_data"]["dir"] + config["genome_data"]["gff"],
     run:
         shell(  # cp - copy genome fasta file from snpeff database location
             """
@@ -176,9 +219,9 @@ rule gatk_genome_dict:
     input:
         genome=rules.gather_genome_data.output.genome,
     output:
-        genome_dict=config["gather_genome_data"]["dict"],
+        genome_dict=config["genome_data"]["dir"] + config["genome_data"]["dict"],
     log:
-        config["gather_genome_data"]["dir_fasta"] + "log/gatk_genome_dict.log",
+        config["genome_data"]["dir"] + "log/gatk_genome_dict.log",
     params:
         java_opts=config["gatk_java_opts"]["general"],
     conda:
@@ -501,7 +544,7 @@ rule samtools_depth:
         """
 
 
-# 5d) gatk CollectInsertSizeMetrics
+# 5d) gatk CollectInsertSizeMetrics - get mapping-quality statistics from BAM file
 # *********************************************************************
 rule gatk_insert_size_metrics:
     input:
@@ -513,7 +556,7 @@ rule gatk_insert_size_metrics:
         histogram=config["map_qual_stats"]["dir"]
         + "gatk/insert_size/histogram/{sample}.histogram.pdf",
     log:
-        config["map_qual_stats"]["dir"] + "gatk/log/{sample}.log",
+        config["map_qual_stats"]["dir"] + "gatk/insert_size/log/{sample}.log",
     params:
         extra=config["map_qual_stats"]["extra_gatk"],
         java_opts=config["gatk_java_opts"]["general"],
@@ -537,6 +580,42 @@ rule gatk_insert_size_metrics:
         """
 
 
+# 5e) gatk CollectAlignmentSummaryMetrics - get mapping-quality statistics from BAM file
+# *********************************************************************
+rule gatk_alignment_summary_metrics:
+    input:
+        bam=rules.mark_duplicates.output.bam,
+        genome=rules.gather_genome_data.output.genome,
+    output:
+        metrics=config["map_qual_stats"]["dir"]
+        + "gatk/alignment_summary/metrics/{sample}.metrics.txt",
+        histogram=config["map_qual_stats"]["dir"]
+        + "gatk/alignment_summary/histogram/{sample}.histogram.pdf",
+    log:
+        config["map_qual_stats"]["dir"] + "gatk/alignment_summary/log/{sample}.log",
+    params:
+        extra="",
+        java_opts=config["gatk_java_opts"]["general"],
+    conda:
+        "envs/gatk.yaml"
+    message:
+        "######  RUNNING {rule} ON INPUT: {input.bam}  ######"
+    shell:
+        """
+        echo "##############################################"
+        echo " Running GATK CollectAlignmentSummaryMetrics "
+        echo "##############################################"
+
+        gatk --java-options "{params.java_opts}" CollectAlignmentSummaryMetrics \
+            {params.extra} \
+            -R {input.genome} \
+            -I {input.bam} \
+            -O {output.metrics} \
+            -H {output.histogram} \
+            2> {log}
+        """
+
+
 # ######################################################################
 #                        Step 6 - Variant Calling
 # ######################################################################
@@ -549,7 +628,7 @@ rule gatk_haplotypecaller:
     input:
         bam=rules.mark_duplicates.output.bam,
         genome=rules.gather_genome_data.output.genome,
-        intervals=config["input"]["genome"]["intervals"],
+        intervals=config["input"]["genome"]["bed"],
     output:
         vcf=config["gatk_haplotypecaller"]["dir"] + "{sample}.vcf.gz",
     log:
@@ -607,14 +686,14 @@ rule gatk_genomics_db_import:
     input:
         vcfs=expand(rules.gatk_haplotypecaller.output.vcf, sample=SAMPLES),
         genome=rules.gather_genome_data.output.genome,
-        intervals=config["input"]["genome"]["intervals"],
+        intervals=config["input"]["genome"]["bed"],
         sample_map=rules.generate_sample_vcf_map.output,
     output:
         dir=directory(config["gatk_genomicsdb"]["dir"]),
     log:
         config["gatk_genomicsdb"]["dir"] + "genomicsdb.log",
     params:
-        java_opts=config["gatk_java_opts"]["general"],
+        java_opts=config["gatk_java_opts"]["genomicsdb_import"],
         extra=config["gatk_genomicsdb"]["extra"],
     threads: config["threads"]
     conda:
@@ -641,7 +720,7 @@ rule gatk_genotype_gvcfs:
     input:
         db=rules.gatk_genomics_db_import.output.dir,
         genome=rules.gather_genome_data.output.genome,
-        intervals=config["input"]["genome"]["intervals"],
+        intervals=config["input"]["genome"]["bed"],
     output:
         vcf=config["gatk_genotype_gvcfs"]["dir"] + "genotypes.vcf.gz",
     log:
@@ -649,7 +728,6 @@ rule gatk_genotype_gvcfs:
     params:
         extra=config["gatk_genotype_gvcfs"]["extra"],
         java_opts=config["gatk_java_opts"]["genotype_gvcfs"],
-        threads=config["threads"],
     conda:
         "envs/gatk.yaml"
     shell:
@@ -673,20 +751,60 @@ rule gatk_genotype_gvcfs:
 # ######################################################################
 
 
-# 7a) gatk SelectVariants - separate snps and indels into separate vcf files
-# TODO: consider seleting mixed sites and multiallelic sites
+# 7a) bcftools normalize - normalize indels, left-align variants and split multi-allelic sites
 # *********************************************************************
-rule gatk_split_variants:
+rule bcftools_normalize:
     input:
         vcf=rules.gatk_genotype_gvcfs.output.vcf,
         genome=rules.gather_genome_data.output.genome,
-        intervals=config["input"]["genome"]["intervals"],
     output:
-        snps=config["gatk_var_split"]["dir"] + "snps.vcf.gz",
-        indels=config["gatk_var_split"]["dir"] + "indels.vcf.gz",
+        vcf=config["bcftools"]["dir"] + "normalized.vcf.gz",
     log:
-        snps=config["gatk_var_split"]["dir"] + "snps.log",
-        indels=config["gatk_var_split"]["dir"] + "indels.log",
+        config["bcftools"]["dir"] + "normalize.log",
+    params:
+        normalise=config["bcftools"]["extra"]["normalize"],
+        annotate=config["bcftools"]["extra"]["annotate"],
+        view=config["bcftools"]["extra"]["view"],
+    conda:
+        "envs/bcftools.yaml"
+    shell:
+        """
+        echo "##############################################"
+        echo "--- Running BCFtools Normalize & Index VCF ---"
+        echo "##############################################"
+        
+        bcftools norm \
+            {params.normalise} \
+            --fasta-ref {input.genome} \
+            {input.vcf} \
+            2> {log} |\
+        bcftools annotate \
+            {params.annotate} \
+            2>> {log} |\
+        bcftools view \
+            {params.view} \
+            --output-type z \
+            --output-file {output.vcf} \
+            2>> {log}
+        
+        tabix -p vcf {output.vcf}
+        """
+
+
+# 7b. i) gatk SelectVariants - separate snps and indels into separate vcf files
+# *********************************************************************
+rule gatk_split_variants:
+    input:
+        vcf=rules.bcftools_normalize.output.vcf,
+        genome=rules.gather_genome_data.output.genome,
+        intervals=config["input"]["genome"]["bed"],
+    output:
+        snps=config["gatk_var_split"]["dir"] + "1_gatk_variants_split/snps_split.vcf.gz",
+        indels=config["gatk_var_split"]["dir"]
+        + "1_gatk_variants_split/indels_split.vcf.gz",
+    log:
+        snps=config["gatk_var_split"]["dir"] + "log/variants_split_snps.log",
+        indels=config["gatk_var_split"]["dir"] + "log/variants_split_indels.log",
     params:
         java_opts=config["gatk_java_opts"]["general"],
     conda:
@@ -694,7 +812,7 @@ rule gatk_split_variants:
     shell:
         """
         echo "##############################################"
-        echo "-----    Running GATK SelectVariants     -----"
+        echo "-----    Running GATK SplitVariants     -----"
         echo "##############################################"
         
         gatk --java-options "{params.java_opts}" SelectVariants \
@@ -713,20 +831,22 @@ rule gatk_split_variants:
         """
 
 
-# 7b) gatk VariantFilterHard - apply hard filters to snps and indels
+# 7b. ii) gatk VariantFilterHard - apply hard filters to snps and indels
 # *********************************************************************
 rule gatk_filter_hard:
     input:
         snps=rules.gatk_split_variants.output.snps,
         indels=rules.gatk_split_variants.output.indels,
         genome=rules.gather_genome_data.output.genome,
-        intervals=config["input"]["genome"]["intervals"],
+        intervals=config["input"]["genome"]["bed"],
     output:
-        snps=config["gatk_filter_hard"]["dir"] + "snps_filtered.vcf.gz",
-        indels=config["gatk_filter_hard"]["dir"] + "indels_filtered.vcf.gz",
+        snps=config["gatk_filter_hard"]["dir"]
+        + "2_gatk_variants_filtered/snps_filtered.vcf.gz",
+        indels=config["gatk_filter_hard"]["dir"]
+        + "2_gatk_variants_filtered/indels_filtered.vcf.gz",
     log:
-        snps=config["gatk_filter_hard"]["dir"] + "snps.log",
-        indels=config["gatk_filter_hard"]["dir"] + "indels.log",
+        snps=config["gatk_filter_hard"]["dir"] + "log/variants_filter_snps.log",
+        indels=config["gatk_filter_hard"]["dir"] + "log/variants_filter_indels.log",
     params:
         java_opts=config["gatk_java_opts"]["general"],
         extra_snps=config["gatk_filter_hard"]["extra_indels"],
@@ -736,7 +856,7 @@ rule gatk_filter_hard:
     shell:
         """
         echo "##############################################"
-        echo "----    Running GATK VariantFiltration    ----"
+        echo "---  Running GATK VariantFiltration (Hard) ---"
         echo "##############################################"
         
         gatk --java-options "{params.java_opts}" VariantFiltration \
@@ -755,16 +875,16 @@ rule gatk_filter_hard:
         """
 
 
-# 7c) gatk MergeVcfs - merge snps and indels into one vcf file
+# 7b. iii) gatk MergeVcfs - merge snps and indels into one vcf file
 # *********************************************************************
 rule gatk_merge_vcfs:
     input:
         snps=rules.gatk_filter_hard.output.snps,
         indels=rules.gatk_filter_hard.output.indels,
     output:
-        vcf=config["gatk_merge_vcfs"]["dir"] + "merged.vcf.gz",
+        vcf=config["gatk_merge_vcfs"]["dir"] + "unfiltered.vcf.gz",
     log:
-        config["gatk_merge_vcfs"]["dir"] + "merged.log",
+        config["gatk_merge_vcfs"]["dir"] + "log/unfiltered.log",
     params:
         java_opts=config["gatk_java_opts"]["general"],
     conda:
@@ -783,15 +903,168 @@ rule gatk_merge_vcfs:
         """
 
 
-# 7d) gatk FilterPassVariants - filter out variants that do not pass the hard filters
+# 7c. i) gatk VariantRecalibrator - variant quality score recalibration for indels
+# *********************************************************************
+rule gatk_vqsr_indels:
+    input:
+        genome=rules.gather_genome_data.output.genome,
+        intervals=config["input"]["genome"]["bed"],
+        vcf=rules.bcftools_normalize.output.vcf,
+    output:
+        recal=config["gatk_filter_soft"]["dir"] + "1_gatk_vsqr/indels_recal",
+        tranches=config["gatk_filter_soft"]["dir"] + "1_gatk_vsqr/indels_recal.tranches",
+        plots=config["gatk_filter_soft"]["dir"] + "1_gatk_vsqr/indels_recal.plots.R",
+    log:
+        config["gatk_filter_soft"]["dir"] + "log/gatk_vqsr_indels.log",
+    params:
+        java_opts=config["gatk_java_opts"]["vqsr"],
+        extra=config["gatk_filter_soft"]["extra"]["indels_vqsr"],
+        resource=config["gatk_filter_soft"]["resource"],
+        known_sites=config["gatk_filter_soft"]["sites"],
+    conda:
+        "envs/gatk.yaml"
+    shell:
+        """
+        echo "##############################################"
+        echo "- Running GATK VariantRecalibrator (INDELS) -"
+        echo "##############################################"
+        
+        gatk --java-options "{params.java_opts}" VariantRecalibrator \
+            {params.extra} \
+            -R {input.genome} \
+            -V {input.vcf} \
+            -O {output.recal} \
+            -resource:{params.resource} {params.known_sites} \
+            --tranches-file {output.tranches} \
+            --rscript-file {output.plots} \
+            2> {log}
+        """
+
+
+# 7c. ii) gatk ApplyVQSR - apply soft filters to indels
+# *********************************************************************
+rule gatk_apply_vqsr_indels:
+    input:
+        genome=rules.gather_genome_data.output.genome,
+        intervals=config["input"]["genome"]["bed"],
+        vcf=rules.bcftools_normalize.output.vcf,
+        tranches=rules.gatk_vqsr_indels.output.tranches,
+        recal=rules.gatk_vqsr_indels.output.recal,
+    output:
+        vcf=config["gatk_filter_soft"]["dir"]
+        + "2_gatk_apply_vsqr/indels_filtered.vcf.gz",
+    log:
+        config["gatk_filter_soft"]["dir"] + "log/gatk_apply_vqsr_indels.log",
+    params:
+        java_opts=config["gatk_java_opts"]["vqsr"],
+        extra=config["gatk_filter_soft"]["extra"]["indels_apply_vsqr"],
+        resource=config["gatk_filter_soft"]["resource"],
+        known_sites=config["gatk_filter_soft"]["sites"],
+    conda:
+        "envs/gatk.yaml"
+    shell:
+        """
+        echo "##############################################"
+        echo "----   Running GATK ApplyVQSR (INDELS)   -----"
+        echo "##############################################"
+        
+        gatk --java-options "{params.java_opts}" ApplyVQSR \
+            {params.extra} \
+            -R {input.genome} \
+            -V {input.vcf} \
+            -O {output.vcf} \
+            --tranches-file {input.tranches} \
+            --recal-file {input.recal} \
+            2> {log}
+        """
+
+
+# 7c. iii) gatk VariantRecalibrator - variant quality score recalibration for snps
+# *********************************************************************
+rule gatk_vqsr_snps:
+    input:
+        genome=rules.gather_genome_data.output.genome,
+        intervals=config["input"]["genome"]["bed"],
+        vcf=rules.gatk_apply_vqsr_indels.output.vcf,
+    output:
+        recal=config["gatk_filter_soft"]["dir"] + "1_gatk_vsqr/snps_recal",
+        tranches=config["gatk_filter_soft"]["dir"] + "1_gatk_vsqr/snps_recal.tranches",
+        plots=config["gatk_filter_soft"]["dir"] + "1_gatk_vsqr/snps_recal.plots.R",
+    log:
+        config["gatk_filter_soft"]["dir"] + "log/gatk_vqsr_snps.log",
+    params:
+        java_opts=config["gatk_java_opts"]["vqsr"],
+        extra=config["gatk_filter_soft"]["extra"]["snps_vqsr"],
+        resource=config["gatk_filter_soft"]["resource"],
+        known_sites=config["gatk_filter_soft"]["sites"],
+    conda:
+        "envs/gatk.yaml"
+    shell:
+        """
+        echo "##############################################"
+        echo "--  Running GATK VariantRecalibrator (SNPs) --"
+        echo "##############################################"
+        
+        gatk --java-options "{params.java_opts}" VariantRecalibrator \
+            {params.extra} \
+            -R {input.genome} \
+            -V {input.vcf} \
+            -O {output.recal} \
+            -resource:{params.resource} {params.known_sites} \
+            --tranches-file {output.tranches} \
+            --rscript-file {output.plots} \
+            2> {log}
+        """
+
+
+# 7c .iv) gatk ApplyVQSR - apply soft filters to snps
+# *********************************************************************
+rule gatk_apply_vqsr_snps:
+    input:
+        genome=rules.gather_genome_data.output.genome,
+        intervals=config["input"]["genome"]["bed"],
+        vcf=rules.gatk_apply_vqsr_indels.output.vcf,
+        tranches=rules.gatk_vqsr_snps.output.tranches,
+        recal=rules.gatk_vqsr_snps.output.recal,
+    output:
+        vcf=config["gatk_filter_soft"]["dir"] + "2_gatk_apply_vsqr/snps_filtered.vcf.gz",
+    log:
+        config["gatk_filter_soft"]["dir"] + "log/gatk_apply_vqsr_snps.log",
+    params:
+        java_opts=config["gatk_java_opts"]["vqsr"],
+        extra=config["gatk_filter_soft"]["extra"]["snps_apply_vsqr"],
+        resource=config["gatk_filter_soft"]["resource"],
+        known_sites=config["gatk_filter_soft"]["sites"],
+    conda:
+        "envs/gatk.yaml"
+    shell:
+        """
+        echo "##############################################"
+        echo "------  Running GATK ApplyVQSR (SNPs)  -------"
+        echo "##############################################"
+        
+        gatk --java-options "{params.java_opts}" ApplyVQSR \
+            {params.extra} \
+            -R {input.genome} \
+            -V {input.vcf} \
+            -O {output.vcf} \
+            --tranches-file {input.tranches} \
+            --recal-file {input.recal} \
+            2> {log}
+        """
+
+
+# 7c. v) gatk FilterPassVariants - filter out variants that do not pass the hard filters
 # *********************************************************************
 rule gatk_filter_pass:
     input:
-        vcf=rules.gatk_merge_vcfs.output.vcf,
+        vcf=rules.gatk_merge_vcfs.output.vcf
+        if config["gatk_filtering_method"] == "hard"
+        else rules.gatk_apply_vqsr_snps.output.vcf,
     output:
-        vcf=config["gatk_filter_pass"]["dir"] + "pass.vcf.gz",
+        vcf=config["gatk_filter_pass"]["dir"] + "filtered.vcf.gz",
     log:
-        config["gatk_filter_pass"]["dir"] + "pass.log",
+        config["gatk_filter_pass"]["dir"] + "log/filtered.vcf.gz.log",
     params:
         java_opts=config["gatk_java_opts"]["general"],
     conda:
@@ -851,7 +1124,7 @@ rule gatk_variants_to_table:
     input:
         vcf=rules.snpeff_annotate_variants.output.vcf,
     output:
-        variants=config["snpeff"]["dir"] + "annotated-wide.tsv",
+        variants=config["snpeff"]["dir"] + "annotated-wide-soft.tsv",
     log:
         config["snpeff"]["dir"] + "log/gatk.log",
     params:
@@ -883,7 +1156,7 @@ rule python_allele_frequency:
     input:
         variants=rules.gatk_variants_to_table.output.variants,
     output:
-        variants=config["snpeff"]["dir"] + "annotated-long.tsv",
+        variants=config["snpeff"]["dir"] + "annotated-long-soft.tsv",
     log:
         config["snpeff"]["dir"] + "log/python.log",
     conda:
@@ -894,5 +1167,8 @@ rule python_allele_frequency:
         echo "------   Running Python AlleleFrequency   ----"
         echo "##############################################"
         
-        python workflow/scripts/vcf_allele_frequency.py
+        python workflow/scripts/vcf_allele_frequency.py \
+            {input.variants} \
+            {output.variants} \
+            2> {log}
         """

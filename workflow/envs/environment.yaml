@@ -5,3 +5,4 @@ channels:
 dependencies:
   - bioconda::snakemake>=7.24.2
   - bioconda::snpeff=5.1
+  - anaconda::graphviz=2.50.0
