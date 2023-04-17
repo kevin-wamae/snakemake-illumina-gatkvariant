@@ -1,6 +1,6 @@
 # number of threads to use, whenever possible
 # ----------------------------------------------------------------
-threads: 4  # number of threads to use, whenever possible
+threads: 2  # number of threads to use, whenever possible
 
 
 
@@ -13,7 +13,7 @@ gatk_filtering_method: "hard"  # default to hard filtering {options: hard, soft}
 # gatk_java_opts - memory allocation for gatk tools
 # ----------------------------------------------------------------
 gatk_java_opts:                   
-   general:                        # number of threads to use, whenever possible
+   general:                        # ram and threads for less memory intensive gatk tools
       - "-Xms4G"                     # initial heap size
       - "-Xmx4G"                     # maximum heap size
       - "-XX:ParallelGCThreads=2"    # number of threads to use for garbage collection
@@ -246,7 +246,7 @@ gatk_var_split:
 gatk_filter_hard:
    dir: output/6_variant_filtering/b_gatk_variants_filter_hard/              # output directory
    extra_snps:                                                            # hard filters for SNPs
-   - '-filter "DP < 1" --filter-name "DP1"'                                 # DP = total depth of reads
+   - '-filter "DP < 500" --filter-name "DP500"'                                 # DP = total depth of reads
    - '-filter "QD < 2.0" --filter-name "QD2"'                               # QD = variant confidence / depth
    - '-filter "QUAL < 30.0" --filter-name "QUAL30"'                         # QUAL = phred-scaled quality score
    - '-filter "SOR > 3.0" --filter-name "SOR3"'                             # SOR = strand bias
@@ -255,7 +255,7 @@ gatk_filter_hard:
    - '-filter "MQRankSum < -12.5" --filter-name "MQRankSum-12.5"'           # MQRankSum = Z-score from Wilcoxon rank sum test of Alt vs. Ref read mapping qualities
    - '-filter "ReadPosRankSum < -8.0" --filter-name "ReadPosRankSum-8"'     # ReadPosRankSum = Z-score from Wilcoxon rank sum test of Alt vs. Ref read position bias
    extra_indels:                                                         # hard filters for indels, see above for explanation
-   - '-filter "DP < 1" --filter-name "DP1"'
+   - '-filter "DP < 500" --filter-name "DP500"'
    - '-filter "QD < 2.0" --filter-name "QD2"'
    - '-filter "QUAL < 30.0" --filter-name "QUAL30"'
    - '-filter "FS > 200.0" --filter-name "FS200"'
