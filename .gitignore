@@ -4,9 +4,13 @@
 
 # output files
 .snpEff.config
-output/*
+output*
 
 # gitignore files
 !input/.gitignore
 !output/.gitignore
 .Rproj.user
+
+# slurm files
+*.out
+*.err
