@@ -4,3 +4,4 @@ channels:
 dependencies:
   - bioconda::gatk4=4.4.0.0
   - conda-forge::r-base=4.2.3
+  - conda-forge::r-ggplot2=3.4.2
