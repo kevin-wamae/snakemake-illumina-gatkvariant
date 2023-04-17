@@ -1,4 +1,4 @@
-# **Snakemake workflow: variant calling using GATK best practices**
+# **Snakemake workflow: variant calling using GATK4 best practices**
 
 ## **Table of contents**
 - [**Snakemake workflow: variant calling using GATK best practices**](#snakemake-workflow-variant-calling-using-gatk-best-practices)
