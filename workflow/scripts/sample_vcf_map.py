@@ -22,4 +22,5 @@ file_list.sort(key=lambda x: x[1])
 # Write the file names and paths to a TSV file
 with open(tsv_file, 'w') as tsv_file:
     for file_path, file_name in file_list:
-        tsv_file.write(f'{os.path.splitext(file_name)[0]}\t{file_path}\n')
+        tsv_file.write(os.path.splitext(file_name)[
+                       0] + '\t' + file_path + '\n')
