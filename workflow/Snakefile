@@ -22,7 +22,7 @@ configfile: "config/config.yaml"
 # ######################################################################
 
 
-# 1) gather all output files
+# 1) Compile List of Output Files
 # *********************************************************************
 
 
@@ -275,7 +275,7 @@ rule bedops_gff2bed:
 
 
 # ######################################################################
-#                     Step 3 - Fastq Quality Control
+#                 Step 3 - Perform Fastq Quality Control
 # ######################################################################
 
 
@@ -478,7 +478,7 @@ rule mark_duplicates:
 
 
 # ######################################################################
-#                      Step 5 - Mapping Quality Stats
+#             Step 5 - Generate Mapping Quality Statistics
 # ######################################################################
 
 
@@ -621,7 +621,7 @@ rule gatk_alignment_summary_metrics:
 
 
 # ######################################################################
-#                        Step 6 - Variant Calling
+#                    Step 6 - Perform Variant Calling
 # ######################################################################
 
 
@@ -751,7 +751,7 @@ rule gatk_genotype_gvcfs:
 
 
 # ######################################################################
-#                      Step 7 - Variant Filtering
+#            Step 7 - Perform Variant Filtering (Hard or Soft)
 # ######################################################################
 
 
@@ -1088,7 +1088,7 @@ rule gatk_filter_pass:
 
 
 # ######################################################################
-#                      Step 8 - Variant Annotation
+#     Step 8 - Annotatate Variants and Calculate Allele Frequencies
 # ######################################################################
 
 
