@@ -1,5 +1,27 @@
 # **Snakemake workflow: variant calling using GATK4 best practices**
 
+
+![GitHub release (release name instead of tag name)](https://img.shields.io/github/v/release/kevin-wamae/gatk-variant-voyage)
+![GitHub](https://img.shields.io/github/license/kevin-wamae/gatk-variant-voyage?color=red)
+[![conda](https://img.shields.io/badge/conda->=23.1.0-brightgreen.svg)](https://github.com/conda/conda)
+[![snakemake](https://img.shields.io/badge/snakemake-7.24.2-brightgreen.svg)](https://snakemake.readthedocs.io)
+
+
+[![bedops](https://img.shields.io/badge/bedops-2.4.41-brightgreen.svg)](https://bedops.readthedocs.io/en/latest/)
+[![trimmomatic](https://img.shields.io/badge/trimmomatic-0.39-brightgreen.svg)](http://www.usadellab.org/cms/?page=trimmomatic)
+[![fastp](https://img.shields.io/badge/fastp-0.23.2-brightgreen.svg)](https://github.com/OpenGene/fastp)
+[![bwa](https://img.shields.io/badge/bwa-0.7.17-brightgreen.svg)](https://github.com/lh3/bwa)
+[![samtools](https://img.shields.io/badge/samtools-1.16.1-brightgreen.svg)](https://github.com/samtools/samtools)
+[![gatk4](https://img.shields.io/badge/gatk4-4.4.0.0-brightgreen.svg)](https://github.com/broadinstitute/gatk)
+[![samblaster](https://img.shields.io/badge/samblaster-0.1.26-brightgreen.svg)](https://github.com/GregoryFaust/samblaster)
+[![bcftools](https://img.shields.io/badge/bcftools-1.17-brightgreen.svg)](https://github.com/samtools/bcftools)
+[![r](https://img.shields.io/badge/R-4.2.3-brightgreen.svg)](https://anaconda.org/conda-forge/r-base)
+[![ggplot2](https://img.shields.io/badge/ggplot2-3.4.2-brightgreen.svg)](https://ggplot2.tidyverse.org/)
+[![snpeff](https://img.shields.io/badge/snpeff-5.1-brightgreen.svg)](http://pcingola.github.io/SnpEff/)
+[![dask](https://img.shields.io/badge/dask-2023.3.2-brightgreen.svg)](https://www.dask.org/)
+
+---
+
 ## **Table of contents**
 - [**Snakemake workflow: variant calling using GATK4 best practices**](#snakemake-workflow-variant-calling-using-gatk4-best-practices)
   - [**Table of contents**](#table-of-contents)
@@ -172,6 +194,6 @@ After navigating into the root directory of the project, run the analysis by exe
 
 ## **Feedback and Issues**
 
-Report any issues or bugs by openning an issue [here](https://github.com/kevin-wamae/gatk-variant-voyage/issues) or contact me via email (wamaekevin[at]gmail.com)
+Report any issues or bugs by openning an issue [here](https://github.com/kevin-wamae/gatk-variant-voyage/issues) or contact me via email at **wamaekevin[at]gmail.com**
   
  
