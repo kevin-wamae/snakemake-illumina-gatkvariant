@@ -1,20 +1,20 @@
 # **Snakemake workflow: variant calling using the Genome Analysis Toolkit (GATK) best practices**
 
-
-![GitHub](https://img.shields.io/github/license/kevin-wamae/variant-calling-with-Snakemake-and-GATK?color=red)
+![GitHub release](https://img.shields.io/github/v/release/kevin-wamae/variant-calling-with-Snakemake-and-GATK)
+![GitHub](https://img.shields.io/github/license/kevin-wamae/variant-calling-with-Snakemake-and-GATK?color=maroon)
 [![conda](https://img.shields.io/badge/conda->=23.1.0-brightgreen.svg)](https://github.com/conda/conda)
 [![snakemake](https://img.shields.io/badge/snakemake-7.24.2-brightgreen.svg)](https://snakemake.readthedocs.io)
 
 
 
-[![trimmomatic](https://img.shields.io/badge/trimmomatic-0.39-blue.svg)](http://www.usadellab.org/cms/?page=trimmomatic)
-[![fastp](https://img.shields.io/badge/fastp-0.23.2-blue.svg)](https://github.com/OpenGene/fastp)
-[![bwa](https://img.shields.io/badge/bwa-0.7.17-blue.svg)](https://github.com/lh3/bwa)
-[![samtools](https://img.shields.io/badge/samtools-1.16.1-blue.svg)](https://github.com/samtools/samtools)
-[![gatk4](https://img.shields.io/badge/gatk4-4.4.0.0-blue.svg)](https://github.com/broadinstitute/gatk)
-[![samblaster](https://img.shields.io/badge/samblaster-0.1.26-blue.svg)](https://github.com/GregoryFaust/samblaster)
-[![bcftools](https://img.shields.io/badge/bcftools-1.17-blue.svg)](https://github.com/samtools/bcftools)
-[![snpeff](https://img.shields.io/badge/snpeff-5.1-blue.svg)](http://pcingola.github.io/SnpEff/)
+[![trimmomatic](https://img.shields.io/badge/trimmomatic-0.39-red.svg)](http://www.usadellab.org/cms/?page=trimmomatic)
+[![fastp](https://img.shields.io/badge/fastp-0.23.2-red.svg)](https://github.com/OpenGene/fastp)
+[![bwa](https://img.shields.io/badge/bwa-0.7.17-red.svg)](https://github.com/lh3/bwa)
+[![samtools](https://img.shields.io/badge/samtools-1.16.1-red.svg)](https://github.com/samtools/samtools)
+[![gatk4](https://img.shields.io/badge/gatk4-4.4.0.0-red.svg)](https://github.com/broadinstitute/gatk)
+[![samblaster](https://img.shields.io/badge/samblaster-0.1.26-red.svg)](https://github.com/GregoryFaust/samblaster)
+[![bcftools](https://img.shields.io/badge/bcftools-1.17-red.svg)](https://github.com/samtools/bcftools)
+[![snpeff](https://img.shields.io/badge/snpeff-5.1-red.svg)](http://pcingola.github.io/SnpEff/)
 
 
 ---
