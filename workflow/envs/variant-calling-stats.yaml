@@ -1,0 +1,11 @@
+name: variant-calling-stats
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - bioconda::seqkit=2.4.0
+  - conda-forge::python=3.11.3
+  - conda-forge::pandas=2.0.0
+  - conda-forge::pyyaml=6.0
+  - conda-forge::yaml=0.2.5
+  - bioconda::bcftools=1.17

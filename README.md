@@ -1,29 +1,26 @@
-# **Snakemake workflow: variant calling using GATK4 best practices**
+# **Snakemake workflow: variant calling using the Genome Analysis Toolkit (GATK) best practices**
 
 
-![GitHub release (release name instead of tag name)](https://img.shields.io/github/v/release/kevin-wamae/gatk-variant-voyage)
-![GitHub](https://img.shields.io/github/license/kevin-wamae/gatk-variant-voyage?color=red)
+![GitHub](https://img.shields.io/github/license/kevin-wamae/variant-calling-with-Snakemake-and-GATK?color=red)
 [![conda](https://img.shields.io/badge/conda->=23.1.0-brightgreen.svg)](https://github.com/conda/conda)
 [![snakemake](https://img.shields.io/badge/snakemake-7.24.2-brightgreen.svg)](https://snakemake.readthedocs.io)
 
 
-[![bedops](https://img.shields.io/badge/bedops-2.4.41-brightgreen.svg)](https://bedops.readthedocs.io/en/latest/)
-[![trimmomatic](https://img.shields.io/badge/trimmomatic-0.39-brightgreen.svg)](http://www.usadellab.org/cms/?page=trimmomatic)
-[![fastp](https://img.shields.io/badge/fastp-0.23.2-brightgreen.svg)](https://github.com/OpenGene/fastp)
-[![bwa](https://img.shields.io/badge/bwa-0.7.17-brightgreen.svg)](https://github.com/lh3/bwa)
-[![samtools](https://img.shields.io/badge/samtools-1.16.1-brightgreen.svg)](https://github.com/samtools/samtools)
-[![gatk4](https://img.shields.io/badge/gatk4-4.4.0.0-brightgreen.svg)](https://github.com/broadinstitute/gatk)
-[![samblaster](https://img.shields.io/badge/samblaster-0.1.26-brightgreen.svg)](https://github.com/GregoryFaust/samblaster)
-[![bcftools](https://img.shields.io/badge/bcftools-1.17-brightgreen.svg)](https://github.com/samtools/bcftools)
-[![r](https://img.shields.io/badge/R-4.2.3-brightgreen.svg)](https://anaconda.org/conda-forge/r-base)
-[![ggplot2](https://img.shields.io/badge/ggplot2-3.4.2-brightgreen.svg)](https://ggplot2.tidyverse.org/)
-[![snpeff](https://img.shields.io/badge/snpeff-5.1-brightgreen.svg)](http://pcingola.github.io/SnpEff/)
-[![dask](https://img.shields.io/badge/dask-2023.3.2-brightgreen.svg)](https://www.dask.org/)
+
+[![trimmomatic](https://img.shields.io/badge/trimmomatic-0.39-blue.svg)](http://www.usadellab.org/cms/?page=trimmomatic)
+[![fastp](https://img.shields.io/badge/fastp-0.23.2-blue.svg)](https://github.com/OpenGene/fastp)
+[![bwa](https://img.shields.io/badge/bwa-0.7.17-blue.svg)](https://github.com/lh3/bwa)
+[![samtools](https://img.shields.io/badge/samtools-1.16.1-blue.svg)](https://github.com/samtools/samtools)
+[![gatk4](https://img.shields.io/badge/gatk4-4.4.0.0-blue.svg)](https://github.com/broadinstitute/gatk)
+[![samblaster](https://img.shields.io/badge/samblaster-0.1.26-blue.svg)](https://github.com/GregoryFaust/samblaster)
+[![bcftools](https://img.shields.io/badge/bcftools-1.17-blue.svg)](https://github.com/samtools/bcftools)
+[![snpeff](https://img.shields.io/badge/snpeff-5.1-blue.svg)](http://pcingola.github.io/SnpEff/)
+
 
 ---
 
 ## **Table of contents**
-- [**Snakemake workflow: variant calling using GATK4 best practices**](#snakemake-workflow-variant-calling-using-gatk4-best-practices)
+- [**Snakemake workflow: variant calling using the Genome Analysis Toolkit (GATK) best practices**](#snakemake-workflow-variant-calling-using-the-genome-analysis-toolkit-gatk-best-practices)
   - [**Table of contents**](#table-of-contents)
   - [**Motivation**](#motivation)
   - [**Pipeline sections**](#pipeline-sections)
@@ -115,9 +112,9 @@
   - [Linux](https://docs.conda.io/projects/conda/en/latest/user-guide/install/linux.html)
   - [MacOS](https://docs.conda.io/projects/conda/en/latest/user-guide/install/macos.html)
 - Clone this project using the following command in your terminal:
-  - `git clone https://github.com/kevin-wamae/gatk-variant-voyage.git`
+  - `git clone https://github.com/kevin-wamae/variant-calling-with-Snakemake-and-GATK.git`
 - Type the following command in your terminal to navigate into the cloned directory using the command below. This will be the root directory of the project:
-  - `cd gatk-variant-voyage`
+  - `cd variant-calling-with-Snakemake-and-GATK`
   
 - **_Note: All subsequent commands should be run from the root directory of this project. However, users can modify the scripts to their liking_**
  
@@ -187,13 +184,28 @@ After navigating into the root directory of the project, run the analysis by exe
 
 5. Once the analysis is complete, look through **output/** directory to view the results of the analysis
 
-6. Finally, you can deactivate the conda environment by running the following command to exit this conda environment:
+6. Summary statistics can be generated with stand alone scripts in the `workflow/scripts/` directory:
+   - To do this, create an conda environment with the following command:
+     - `conda env create --file workflow/envs/variant-calling-stats.yaml`
+     - activate the conda environment by running the following command: `conda activate variant-calling-stats`
+   - To generate a summary of the raw reads, run the following command and look through the `stats_1_raw_fastq.tsv` file in the project directory:
+     - `python workflow/scripts/get_raw_fastq_stats.py`
+   - To generate a summary of the trimmed reads, run the following command and look through the `stats_2_trimmed_fastq.tsv` file:
+     - `python workflow/scripts/get_trimmed_fastq_stats.py`
+   - To generate a summary of the mapped reads, run the following command and look through the `stats_3_mapped_reads.tsv` file:
+     - `python workflow/scripts/get_mapped_reads_stats.py`
+   - To generate a summary of the variants called, run the following command and look through the `stats_4_variant_calling.tsv` file:
+     - `bash workflow/scripts/get_variant_calling_stats.sh`
+   - Exit this conda environment by running the following command:
+     - `conda deactivate variant-calling-stats`
+
+7. Finally, you can deactivate the variant calling conda environment by running the following command:
      - `conda deactivate variant-calling-gatk`
 
 ---
 
 ## **Feedback and Issues**
 
-Report any issues or bugs by openning an issue [here](https://github.com/kevin-wamae/gatk-variant-voyage/issues) or contact me via email at **wamaekevin[at]gmail.com**
+Report any issues or bugs by openning an issue [here](https://github.com/kevin-wamae/variant-calling-with-Snakemake-and-GATK/issues) or contact me via email at **wamaekevin[at]gmail.com**
   
  
