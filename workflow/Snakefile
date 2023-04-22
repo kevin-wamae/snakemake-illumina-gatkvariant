@@ -27,6 +27,7 @@ configfile: "config/config.yaml"
 
 
 # gather output from hard or soft filtering and append to rule all
+# TODO: shorten rule all for readability
 # ---------------------------------------------------------------------
 gatk_filtering_output = (
     (
@@ -626,7 +627,7 @@ rule gatk_alignment_summary_metrics:
 
 
 # 6a) gatk HaplotypeCaller - call SNPs and indels via local re-assembly of haplotypes
-# TODO: consider specifying intervals for variant calling to speed up process
+# TODO: consider breaking down these step into analysis by chromosomes, then merging them later
 # *********************************************************************
 rule gatk_haplotypecaller:
     input:
