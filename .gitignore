@@ -5,12 +5,24 @@
 # output files
 .snpEff.config
 output*
+*.tsv
+*.txt
 
 # gitignore files
 !input/.gitignore
 !output/.gitignore
-.Rproj.user
 
 # slurm files
 *.out
 *.err
+
+# R files
+.Rhistory
+.RData
+.Ruserdata
+
+# RStudio files
+.Rproj.user
+
+# scripts
+*.sh
