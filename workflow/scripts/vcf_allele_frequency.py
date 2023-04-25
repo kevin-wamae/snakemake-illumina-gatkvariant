@@ -27,7 +27,8 @@ import dask.dataframe as dd
 
 # argparse block to parse command-line arguments
 parser = argparse.ArgumentParser(
-    description="Calculate allele frequency for genomic variants.")
+    description="Calculate allele frequency for genomic variants."
+)
 parser.add_argument("input_file", help="Input TSV file path")
 parser.add_argument("output_file", help="Output TSV file path")
 args = parser.parse_args()
@@ -37,30 +38,34 @@ args = parser.parse_args()
 # ---------------------------------------------------------------
 
 allele_list = dd.read_csv(
-    args.input_file, sep="\t",
+    args.input_file,
+    sep="\t",
     dtype={
-        'AA.pos': 'object',
-        'Allele': 'object',
-        'Annotation': 'object',
-        'Annotation_Impact': 'object',
-        'CDS.pos': 'object',
-        'Errors': 'object',
-        'Feature_ID': 'object',
-        'Feature_Type': 'object',
-        'Gene_ID': 'object',
-        'Gene_Name': 'object',
-        'HGVS.c': 'object',
-        'HGVS.p': 'object',
-        'Rank': 'object',
-        'Transcript_BioType': 'object',
-        'cDNA.pos': 'object'
-    })
+        "AA.pos": "object",
+        "Allele": "object",
+        "Annotation": "object",
+        "Annotation_Impact": "object",
+        "CDS.pos": "object",
+        "Distance": "float64",
+        "Errors": "object",
+        "Feature_ID": "object",
+        "Feature_Type": "object",
+        "Gene_ID": "object",
+        "Gene_Name": "object",
+        "HGVS.c": "object",
+        "HGVS.p": "object",
+        "Rank": "object",
+        "Transcript_BioType": "object",
+        "cDNA.pos": "object",
+    },
+)
 
 
 # ---------------------------------------------------------------
 # define a function to calculate the proportion from an allele depth
 # (AD) value
 # ---------------------------------------------------------------
+
 
 def calculate_proportion(value):
     """Calculate proportion from allele depth (AD) value."""
@@ -82,7 +87,7 @@ allele_freq = allele_list.melt(
     id_vars=allele_list.columns[:19],
     value_vars=allele_list.columns[19:],
     var_name="sample",
-    value_name="AD"
+    value_name="AD",
 ).query("AD != '0,0'")
 
 # ---------------------------------------------------------------
@@ -90,8 +95,9 @@ allele_freq = allele_list.melt(
 # result as a new column to the dataframe
 # ---------------------------------------------------------------
 
-allele_freq["prop"] = allele_freq["AD"].apply(
-    calculate_proportion, meta=('prop', 'f8')).round(3)
+allele_freq["prop"] = (
+    allele_freq["AD"].apply(calculate_proportion, meta=("prop", "f8")).round(3)
+)
 
 # ---------------------------------------------------------------
 # save the resulting dataframe(s) as a TSV file with tab-separated values
@@ -112,9 +118,23 @@ allele_freq["prop"] = allele_freq["AD"].apply(
 # ---------------------------------------------------------------
 
 # columns to keep - replace 'col1', 'col2', ... with the actual column names you want to keep
-columns_to_keep = ['CHROM', 'POS', 'TYPE', 'Annotation', 'Gene_ID', 'Feature_ID',
-                   'Transcript_BioType', 'cDNA.pos', 'CDS.pos', 'HGVS.c', 'AA.pos',
-                   'HGVS.p', 'sample', 'AD', 'prop']
+columns_to_keep = [
+    "CHROM",
+    "POS",
+    "TYPE",
+    "Annotation",
+    "Gene_ID",
+    "Feature_ID",
+    "Transcript_BioType",
+    "cDNA.pos",
+    "CDS.pos",
+    "HGVS.c",
+    "AA.pos",
+    "HGVS.p",
+    "sample",
+    "AD",
+    "prop",
+]
 
 # cDNA.pos refers to the position of the variant within the coding DNA (cDNA) sequence of a gene.
 # cDNA sequences include both exons and UTR (untranslated) regions of the gene.
@@ -126,5 +146,6 @@ allele_freq_single_partition = allele_freq.repartition(npartitions=1)
 # Save the resulting dataframe as a TSV file with tab-separated values and no index
 # ---------------------------------------------------------------
 
-allele_freq_single_partition.loc[:, columns_to_keep].to_csv(args.output_file,
-                                                            sep="\t", index=False, single_file=True)
+allele_freq_single_partition.loc[:, columns_to_keep].to_csv(
+    args.output_file, sep="\t", index=False, single_file=True
+)
