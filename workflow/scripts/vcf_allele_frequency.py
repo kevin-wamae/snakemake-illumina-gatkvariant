@@ -84,8 +84,8 @@ def calculate_proportion(value):
 # ---------------------------------------------------------------
 
 allele_freq = allele_list.melt(
-    id_vars=allele_list.columns[:19],
-    value_vars=allele_list.columns[19:],
+    id_vars=allele_list.columns[:21],  # Updated line
+    value_vars=allele_list.columns[21:],
     var_name="sample",
     value_name="AD",
 ).query("AD != '0,0'")
@@ -121,6 +121,8 @@ allele_freq["prop"] = (
 columns_to_keep = [
     "CHROM",
     "POS",
+    "REF",
+    "ALT",
     "TYPE",
     "Annotation",
     "Gene_ID",

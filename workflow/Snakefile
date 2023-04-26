@@ -1114,7 +1114,8 @@ rule snpeff_annotate_variants:
         echo "--------   Running SnpEff Annotate   --------"
         echo "##############################################"
         
-        snpEff {params.extra} \
+        snpEff ann \
+            {params.extra} \
             -config {params.config} \
             {params.database} \
             {input.vcf} | bgzip -c > {output.vcf}
@@ -1146,6 +1147,8 @@ rule gatk_variants_to_table:
             -V {input.vcf} \
             -F CHROM \
             -F POS \
+            -F REF \
+            -F ALT \
             -F TYPE \
             -F ANN \
             -GF AD \
