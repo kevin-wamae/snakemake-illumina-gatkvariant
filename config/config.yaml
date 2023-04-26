@@ -325,11 +325,6 @@ snpeff:
   config: .snpEff.config             # snpeff config file
   database: P.falciparum             # snpeff database
   extra_snpeff:                      # extra options to pass to snpeff
-    - "-no-upstream"                    # do not annotate upstream variants
     - "-hgvs1LetterAa"                  # use one-letter amino acid codes in HGVS
-    - "-noLof"                          # do not annotate loss-of-function variants
-    - "-noShiftHgvs"                    # do not annotate HGVS for shifted variants
-    - "-noMotif"                        # do not annotate regulatory features
-    - "-noInteraction"                  # do not annotate protein-protein interactions
     - "-noStats"                        # do not create stats (summary) file
     - "-hgvsOld"                        # use old HGVS format
