@@ -21,11 +21,20 @@
 # each variant across multiple samples.
 # ***************************************************************
 
+
+# ---------------------------------------------------------------
+# load the necessary modules
+# ---------------------------------------------------------------
+
 import argparse
 import dask.dataframe as dd
 
 
+# ---------------------------------------------------------------
 # argparse block to parse command-line arguments
+# ---------------------------------------------------------------
+
+
 parser = argparse.ArgumentParser(
     description="Calculate allele frequency for genomic variants."
 )
@@ -33,9 +42,11 @@ parser.add_argument("input_file", help="Input TSV file path")
 parser.add_argument("output_file", help="Output TSV file path")
 args = parser.parse_args()
 
+
 # ---------------------------------------------------------------
 # load the data as a Dask dataframe
 # ---------------------------------------------------------------
+
 
 allele_list = dd.read_csv(
     args.input_file,
@@ -90,32 +101,22 @@ allele_freq = allele_list.melt(
     value_name="AD",
 ).query("AD != '0,0'")
 
+
 # ---------------------------------------------------------------
 # apply the calculate_proportion function to the AD column and add the
 # result as a new column to the dataframe
 # ---------------------------------------------------------------
 
+
 allele_freq["prop"] = (
     allele_freq["AD"].apply(calculate_proportion, meta=("prop", "f8")).round(3)
 )
+
 
 # ---------------------------------------------------------------
 # save the resulting dataframe(s) as a TSV file with tab-separated values
 # ---------------------------------------------------------------
 
-# # option 1 - multi-part file
-# # - not that if you choose to use the multi-part file option, you will
-# # - have to change the output path in the Snakefile point to a directory, e.g.
-# # - `dir=directory(config["snpeff"]["dir"] + "annotated-long")' -> in the respective rule, and
-# # - config["snpeff"]["dir"] + "annotated-long" -> in rule all
-# # ---------------------------------------------------------------
-
-# allele_freq.to_csv("output/7_variant_annotation/annotated-long",
-#                    sep="\t", index=False)
-
-# option 2 - single file
-# Repartition the dataframe into a single partition
-# ---------------------------------------------------------------
 
 # columns to keep - replace 'col1', 'col2', ... with the actual column names you want to keep
 columns_to_keep = [
@@ -145,6 +146,8 @@ columns_to_keep = [
 
 allele_freq_single_partition = allele_freq.repartition(npartitions=1)
 
+
+# ---------------------------------------------------------------
 # Save the resulting dataframe as a TSV file with tab-separated values and no index
 # ---------------------------------------------------------------
 
