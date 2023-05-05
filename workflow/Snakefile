@@ -183,7 +183,7 @@ rule all:
         # gatk_variants_to_table
         config["snpeff"]["dir"] + "annotated-wide.tsv",
         # ------------------------------------
-        # python_allele_frequencies
+        # r_allele_frequencies
         config["snpeff"]["dir"] + "annotated-long.tsv",
         # ------------------------------------
 
@@ -1128,7 +1128,7 @@ rule snpeff_annotate_variants:
 # *********************************************************************
 rule gatk_variants_to_table:
     input:
-        vcf=rules.snpeff_annotate_variants.output.vcf,
+        vcf="output/7_variant_annotation/annotated.vcf.gz",
     output:
         variants=config["snpeff"]["dir"] + "annotated-wide.tsv",
     log:
@@ -1141,8 +1141,8 @@ rule gatk_variants_to_table:
         """
         echo "##############################################"
         echo "------   Running GATK VariantsToTable   ------"
-        echo "##############################################"
-        
+        echo "##############################################"  
+
         gatk --java-options "{params.java_opts}" VariantsToTable \
             -V {input.vcf} \
             -F CHROM \
@@ -1151,32 +1151,39 @@ rule gatk_variants_to_table:
             -F ALT \
             -F TYPE \
             -F ANN \
+            -GF GT \
             -GF AD \
+            -GF DP \
+            -GF GQ \
+            -GF PGT \
+            -GF PID \
+            -GF PL \
+            -GF PS \
             -O /dev/stdout \
             2> {log} |\
         bash workflow/scripts/split_annot_column.sh > {output.variants}
         """
 
 
-# 8c) python allele_frequency - calculate allele frequencies
+# 8c) R allele_frequency - calculate allele frequencies
 # *********************************************************************
-rule python_allele_frequency:
+rule r_allele_frequency:
     input:
         variants=rules.gatk_variants_to_table.output.variants,
     output:
         variants=config["snpeff"]["dir"] + "annotated-long.tsv",
     log:
-        config["snpeff"]["dir"] + "log/python.log",
+        config["snpeff"]["dir"] + "log/r.log",
     conda:
-        "envs/dask.yaml"
+        "envs/r.yaml"
     shell:
         """
         echo "##############################################"
-        echo "------   Running Python AlleleFrequency   ----"
+        echo "--------   Running R AlleleFrequency  --------"
         echo "##############################################"
         
-        python workflow/scripts/vcf_allele_frequency.py \
-            {input.variants} \
-            {output.variants} \
+        Rscript workflow/scripts/vcf_allele_frequency.R \
+            --input {input.variants} \
+            --output {output.variants} \
             2> {log}
         """
