@@ -1,0 +1,159 @@
+{
+	"files": [
+		{
+			"path": "workflow/Snakefile",
+			"bookmarks": [
+				{
+					"line": 24,
+					"column": 7,
+					"label": ""
+				},
+				{
+					"line": 198,
+					"column": 4,
+					"label": ""
+				},
+				{
+					"line": 220,
+					"column": 6,
+					"label": ""
+				},
+				{
+					"line": 242,
+					"column": 8,
+					"label": ""
+				},
+				{
+					"line": 257,
+					"column": 11,
+					"label": ""
+				},
+				{
+					"line": 282,
+					"column": 7,
+					"label": ""
+				},
+				{
+					"line": 348,
+					"column": 8,
+					"label": ""
+				},
+				{
+					"line": 369,
+					"column": 8,
+					"label": ""
+				},
+				{
+					"line": 428,
+					"column": 10,
+					"label": ""
+				},
+				{
+					"line": 485,
+					"column": 11,
+					"label": ""
+				},
+				{
+					"line": 507,
+					"column": 9,
+					"label": ""
+				},
+				{
+					"line": 529,
+					"column": 14,
+					"label": ""
+				},
+				{
+					"line": 551,
+					"column": 10,
+					"label": ""
+				},
+				{
+					"line": 587,
+					"column": 11,
+					"label": ""
+				},
+				{
+					"line": 628,
+					"column": 8,
+					"label": ""
+				},
+				{
+					"line": 665,
+					"column": 11,
+					"label": ""
+				},
+				{
+					"line": 687,
+					"column": 7,
+					"label": ""
+				},
+				{
+					"line": 721,
+					"column": 10,
+					"label": ""
+				},
+				{
+					"line": 758,
+					"column": 8,
+					"label": ""
+				},
+				{
+					"line": 798,
+					"column": 8,
+					"label": ""
+				},
+				{
+					"line": 838,
+					"column": 11,
+					"label": ""
+				},
+				{
+					"line": 882,
+					"column": 10,
+					"label": ""
+				},
+				{
+					"line": 910,
+					"column": 8,
+					"label": ""
+				},
+				{
+					"line": 948,
+					"column": 10,
+					"label": ""
+				},
+				{
+					"line": 986,
+					"column": 12,
+					"label": ""
+				},
+				{
+					"line": 1024,
+					"column": 12,
+					"label": ""
+				},
+				{
+					"line": 1061,
+					"column": 16,
+					"label": ""
+				},
+				{
+					"line": 1095,
+					"column": 8,
+					"label": ""
+				},
+				{
+					"line": 1126,
+					"column": 11,
+					"label": ""
+				},
+				{
+					"line": 1167,
+					"column": 13,
+					"label": ""
+				}
+			]
+		}
+	]
+}
