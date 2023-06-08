@@ -4,6 +4,7 @@
 
 # TODO: include snakemake reports - https://snakemake.readthedocs.io/en/v5.32.0/snakefiles/reporting.html#snakefiles-reports
 # TODO: abide by https://snakemake.readthedocs.io/en/v5.32.0/snakefiles/deployment.html#
+# TODO: consider calculating allele frequencies in plink - https://www.cog-genomics.org/plink/1.9/formats#freq
 
 
 # ######################################################################
@@ -22,7 +23,7 @@ configfile: "config/config.yaml"
 # ######################################################################
 
 
-# 1) Compile List of Output Files
+# 1) generate a list of all output files
 # *********************************************************************
 
 
@@ -1128,7 +1129,7 @@ rule snpeff_annotate_variants:
 # *********************************************************************
 rule gatk_variants_to_table:
     input:
-        vcf="output/7_variant_annotation/annotated.vcf.gz",
+        vcf=config["snpeff"]["dir"] + "annotated.vcf.gz",
     output:
         variants=config["snpeff"]["dir"] + "annotated-wide.tsv",
     log:
