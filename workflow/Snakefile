@@ -1146,20 +1146,20 @@ rule gatk_variants_to_table:
 
         gatk --java-options "{params.java_opts}" VariantsToTable \
             -V {input.vcf} \
-            -F CHROM \
-            -F POS \
-            -F REF \
-            -F ALT \
-            -F TYPE \
-            -F ANN \
-            -GF GT \
-            -GF AD \
-            -GF DP \
-            -GF GQ \
-            -GF PGT \
-            -GF PID \
-            -GF PL \
-            -GF PS \
+            --fields CHROM \
+            --fields POS \
+            --fields REF \
+            --fields ALT \
+            --fields TYPE \
+            --fields ANN \
+            --genotype-fields GT \
+            --genotype-fields AD \
+            --genotype-fields DP \
+            --genotype-fields GQ \
+            --genotype-fields PGT \
+            --genotype-fields PID \
+            --genotype-fields PL \
+            --genotype-fields PS \
             -O /dev/stdout \
             2> {log} |\
         bash workflow/scripts/split_annot_column.sh > {output.variants}
