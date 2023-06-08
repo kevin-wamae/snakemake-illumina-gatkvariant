@@ -95,7 +95,7 @@ bedops_gff2bed:
 # ----------------------------------------------------------------
 trim_reads:
   dir: output/3_trimmed_fastq/          # output directory
-  trimmer: "Trimmomatic"                   # trimmer to use, options: {Trimmomatic, Fastp}
+  trimmer: "Fastp"                      # trimmer to use, options: {Trimmomatic, Fastp}
   extra_trimmomatic:                    # See trimmomatic manual for adding additional options
     - "LEADING:3"                          # trim bases from the start of a read, if below a threshold quality {default: 3}             
     - "TRAILING:3"                         # trim bases from the end of a read, if below a threshold quality {default: 3}
@@ -171,13 +171,13 @@ gatk_haplotypecaller:
     - "--emit-ref-confidence GVCF"                          # mode for emitting reference confidence scores, possible values: {NONE, BP_RESOLUTION, GVCF}
     - "--sample-ploidy 2"                                   # ploidy (no# of chromosomes per sample), for pooled data, set to number of samples in each pool * ploidy) {Default value: 2}
     - "--assembly-region-padding 100"                       # amount of padding (in bp) to add to each side of the active region {Default value: 100}
-    - "--min-assembly-region-size 50"                       # minimum size of an assembly region {Default value: 50}
+    - "--min-assembly-region-size 100"                      # minimum size of an assembly region {Default value: 50}
     - "--max-num-haplotypes-in-population 128"              # maximum number of haplotypes in population {Default value: 128}
     - "--kmer-size 10"                                      # kmer size to use in the read threading assembler {Default value: 10}
     - "--kmer-size 25"                                      # kmer size to use in the read threading assembler {Default value: 25}
     - "--min-dangling-branch-length 4"                      # minimum length of a dangling branch to try to recover {Default value: 4}
-    - "--heterozygosity 0.001"                              # heterozygosity for SNP and indel calling {Default value: 0.001}
-    - "--indel-heterozygosity 1.25E-4"                      # heterozygosity for indel calling {Default value: 1.25E-4}
+    - "--heterozygosity 0.0029"                             # heterozygosity for SNP and indel calling {Default value: 0.001}
+    - "--indel-heterozygosity 0.0017"                       # heterozygosity for indel calling {Default value: 1.25E-4}
     - "--disable-read-filter null"                          # read filters to be disabled before analysis
     - "--min-base-quality-score 10"                         # minimum base quality required to consider a base for calling {Default value: 10}
     - "--base-quality-score-threshold 18"                   # base qualities below this threshold will be reduced to the minimum {Default value: 18}
@@ -266,36 +266,38 @@ gatk_filter_hard:
 # gatk_filter_soft
 # ----------------------------------------------------------------
 gatk_filter_soft:
-  dir: output/6_variant_filtering/b_gatk_variants_filter_soft/      # output directory
+  dir: /home/KWTRP/kkariuki/projects/wgs_1000_genomes/output/6_variant_filtering/b_gatk_variants_filter_soft/  # output directory
   resource: 'brown,known=true,training=true,truth=true,prior=15.0'  # resource for VQSR
   sites: input/known_sites/strains.2kb.vcf.gz                       # known sites for VQSR
   extra:
-    indels_vqsr:                     # soft filters for Indels
-      - '--mode INDEL'                  # recalibration mode to employ
-      - '--max-gaussians 4'             # max number of Gaussians for the positive model {default: 8}
-      - '--trust-all-polymorphic'       # trust that the input VCF contains only polymorphic sites
-      - '--use-annotation QD'           # names of the annotations to be used for calculations
+    indels_vqsr:                              # variant quality score recalibration (vqsr) for indels
+      - '--mode INDEL'                          # recalibration mode to employ
+      - '--max-gaussians 4'                     # max number of Gaussians for the positive model {default: 8}
+      - '--trust-all-polymorphic'               # trust that the input VCF contains only polymorphic sites
+      - '--use-annotation QD'                   # names of the annotations to be used for calculations
       - '--use-annotation DP'
       - '--use-annotation FS'
       - '--use-annotation SOR'
       - '--use-annotation MQ'
-    indels_apply_vsqr:
-      - '--mode INDEL'                  # recalibration mode to employ
-      - '--exclude-filtered false'      # exclude filtered loci after applying the recalibration {default: false}
-      - '--lod-score-cutoff -2.0'       # the VQSLOD score below which to start filtering {default: null}
-    snps_vqsr:                       # soft filters for SNPs
-      - '--mode SNP'                    # recalibration mode to employ
-      - '--max-gaussians 4'             # max number of Gaussians for the positive model {default: 8}
-      - '--trust-all-polymorphic'       # trust that the input VCF contains only polymorphic sites
-      - '--use-annotation QD'           # names of the annotations to be used for calculations
+    indels_apply_vsqr:                        # apply variant quality score recalibration (vqsr) to indels
+      - '--mode INDEL'                          # recalibration mode to employ
+      - '--exclude-filtered false'              # exclude filtered loci after applying the recalibration {default: false}
+      - '--lod-score-cutoff -2.0'               # the VQSLOD score below which to start filtering {default: null}
+      - '--create-output-variant-index true'    # create a VCF index when writing a VCF file {default: false}
+    snps_vqsr:                                  # variant quality score recalibration (vqsr) for snps
+      - '--mode SNP'                            # recalibration mode to employ
+      - '--max-gaussians 4'                     # max number of Gaussians for the positive model {default: 8}
+      - '--trust-all-polymorphic'               # trust that the input VCF contains only polymorphic sites
+      - '--use-annotation QD'                   # names of the annotations to be used for calculations
       - '--use-annotation DP'
       - '--use-annotation FS'
       - '--use-annotation SOR'
       - '--use-annotation MQ'
-    snps_apply_vsqr:
-      - '--mode SNP'                   # recalibration mode to employ
-      - '--exclude-filtered false'     # exclude filtered loci after applying the recalibration {default: false}
-      - '--lod-score-cutoff 0.0'       # the VQSLOD score below which to start filtering {default: null}
+    snps_apply_vsqr:                          # apply variant quality score recalibration (vqsr) to snps
+      - '--mode SNP'                            # recalibration mode to employ
+      - '--exclude-filtered false'              # exclude filtered loci after applying the recalibration {default: false}
+      - '--lod-score-cutoff 0.0'                # the VQSLOD score below which to start filtering {default: null}
+      - '--create-output-variant-index true'    # create a VCF index when writing a VCF file {default: false}
 
 
 
@@ -309,7 +311,9 @@ gatk_merge_vcfs:
 # gatk_filter_pass
 # ----------------------------------------------------------------
 gatk_filter_pass:
-  dir: output/6_variant_filtering/c_gatk_variants_merged/  # output directory
+  dir: /home/KWTRP/kkariuki/projects/wgs_1000_genomes/output/6_variant_filtering/c_gatk_variants_merged/  # output directory
+  extra:
+    - '--exclude-filtered true'  # exclude filtered loci that are marked as filtered by previous steps {default: false}
 
 
 
