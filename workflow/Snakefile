@@ -4,6 +4,7 @@
 
 # TODO: include snakemake reports - https://snakemake.readthedocs.io/en/v5.32.0/snakefiles/reporting.html#snakefiles-reports
 # TODO: abide by https://snakemake.readthedocs.io/en/v5.32.0/snakefiles/deployment.html#
+# TODO: consider calculating allele frequencies in plink - https://www.cog-genomics.org/plink/1.9/formats#freq
 
 
 # ######################################################################
@@ -22,7 +23,7 @@ configfile: "config/config.yaml"
 # ######################################################################
 
 
-# 1) Compile List of Output Files
+# 1) generate a list of all output files
 # *********************************************************************
 
 
@@ -183,7 +184,7 @@ rule all:
         # gatk_variants_to_table
         config["snpeff"]["dir"] + "annotated-wide.tsv",
         # ------------------------------------
-        # python_allele_frequencies
+        # r_allele_frequencies
         config["snpeff"]["dir"] + "annotated-long.tsv",
         # ------------------------------------
 
@@ -1128,7 +1129,7 @@ rule snpeff_annotate_variants:
 # *********************************************************************
 rule gatk_variants_to_table:
     input:
-        vcf=rules.snpeff_annotate_variants.output.vcf,
+        vcf=config["snpeff"]["dir"] + "annotated.vcf.gz",
     output:
         variants=config["snpeff"]["dir"] + "annotated-wide.tsv",
     log:
@@ -1141,42 +1142,49 @@ rule gatk_variants_to_table:
         """
         echo "##############################################"
         echo "------   Running GATK VariantsToTable   ------"
-        echo "##############################################"
-        
+        echo "##############################################"  
+
         gatk --java-options "{params.java_opts}" VariantsToTable \
             -V {input.vcf} \
-            -F CHROM \
-            -F POS \
-            -F REF \
-            -F ALT \
-            -F TYPE \
-            -F ANN \
-            -GF AD \
+            --fields CHROM \
+            --fields POS \
+            --fields REF \
+            --fields ALT \
+            --fields TYPE \
+            --fields ANN \
+            --genotype-fields GT \
+            --genotype-fields AD \
+            --genotype-fields DP \
+            --genotype-fields GQ \
+            --genotype-fields PGT \
+            --genotype-fields PID \
+            --genotype-fields PL \
+            --genotype-fields PS \
             -O /dev/stdout \
             2> {log} |\
         bash workflow/scripts/split_annot_column.sh > {output.variants}
         """
 
 
-# 8c) python allele_frequency - calculate allele frequencies
+# 8c) R allele_frequency - calculate allele frequencies
 # *********************************************************************
-rule python_allele_frequency:
+rule r_allele_frequency:
     input:
         variants=rules.gatk_variants_to_table.output.variants,
     output:
         variants=config["snpeff"]["dir"] + "annotated-long.tsv",
     log:
-        config["snpeff"]["dir"] + "log/python.log",
+        config["snpeff"]["dir"] + "log/r.log",
     conda:
-        "envs/dask.yaml"
+        "envs/r.yaml"
     shell:
         """
         echo "##############################################"
-        echo "------   Running Python AlleleFrequency   ----"
+        echo "--------   Running R AlleleFrequency  --------"
         echo "##############################################"
         
-        python workflow/scripts/vcf_allele_frequency.py \
-            {input.variants} \
-            {output.variants} \
+        Rscript workflow/scripts/vcf_allele_frequency.R \
+            --input {input.variants} \
+            --output {output.variants} \
             2> {log}
         """

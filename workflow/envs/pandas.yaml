@@ -1,4 +1,4 @@
 channels:
   - conda-forge
 dependencies:
-  - conda-forge::dask=2023.3.2
+  - conda-forge::pandas=2.0.1

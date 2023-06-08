@@ -1,6 +1,6 @@
 # number of threads to use, whenever possible
 # ----------------------------------------------------------------
-threads: 2  # number of threads to use, whenever possible
+threads: 4  # number of threads to use, whenever possible
 
 
 
@@ -95,7 +95,7 @@ bedops_gff2bed:
 # ----------------------------------------------------------------
 trim_reads:
   dir: output/3_trimmed_fastq/          # output directory
-  trimmer: "Trimmomatic"                   # trimmer to use, options: {Trimmomatic, Fastp}
+  trimmer: "Fastp"                      # trimmer to use, options: {Trimmomatic, Fastp}
   extra_trimmomatic:                    # See trimmomatic manual for adding additional options
     - "LEADING:3"                          # trim bases from the start of a read, if below a threshold quality {default: 3}             
     - "TRAILING:3"                         # trim bases from the end of a read, if below a threshold quality {default: 3}
@@ -153,7 +153,7 @@ mark_duplicates:
 # ----------------------------------------------------------------
 map_qual_stats:                         
   dir: output/4_mapped_reads/c_bam_mapping_stats/  # output directory
-  extra_gatk:                                       # extra options to pass to gatk
+  extra_gatk:                                      # extra options to pass to gatk
     - "--MINIMUM_PCT 0.05"                            # minimum percentage of reads to include in stats {default: 0.05}
 
 
@@ -171,13 +171,13 @@ gatk_haplotypecaller:
     - "--emit-ref-confidence GVCF"                          # mode for emitting reference confidence scores, possible values: {NONE, BP_RESOLUTION, GVCF}
     - "--sample-ploidy 2"                                   # ploidy (no# of chromosomes per sample), for pooled data, set to number of samples in each pool * ploidy) {Default value: 2}
     - "--assembly-region-padding 100"                       # amount of padding (in bp) to add to each side of the active region {Default value: 100}
-    - "--min-assembly-region-size 50"                       # minimum size of an assembly region {Default value: 50}
+    - "--min-assembly-region-size 100"                      # minimum size of an assembly region {Default value: 50}
     - "--max-num-haplotypes-in-population 128"              # maximum number of haplotypes in population {Default value: 128}
     - "--kmer-size 10"                                      # kmer size to use in the read threading assembler {Default value: 10}
     - "--kmer-size 25"                                      # kmer size to use in the read threading assembler {Default value: 25}
     - "--min-dangling-branch-length 4"                      # minimum length of a dangling branch to try to recover {Default value: 4}
-    - "--heterozygosity 0.001"                              # heterozygosity for SNP and indel calling {Default value: 0.001}
-    - "--indel-heterozygosity 1.25E-4"                      # heterozygosity for indel calling {Default value: 1.25E-4}
+    - "--heterozygosity 0.0029"                             # heterozygosity for SNP and indel calling {Default value: 0.001}
+    - "--indel-heterozygosity 0.0017"                       # heterozygosity for indel calling {Default value: 1.25E-4}
     - "--disable-read-filter null"                          # read filters to be disabled before analysis
     - "--min-base-quality-score 10"                         # minimum base quality required to consider a base for calling {Default value: 10}
     - "--base-quality-score-threshold 18"                   # base qualities below this threshold will be reduced to the minimum {Default value: 18}
@@ -220,15 +220,15 @@ gatk_genotype_gvcfs:
 # ----------------------------------------------------------------
 bcftools:
   dir: output/6_variant_filtering/a_bcftools_normalize_vcf/  # output directory
-  extra:  # extra options to pass to bcftools
+  extra:                                                     # extra options to pass to bcftools
     normalize:
-      - "--multiallelics -any"                  # split multiallelic sites into biallelic records (-) or join biallelic sites into multiallelic records (+) {optios: snps|indels|both|any}                                         # reference sequence file
-      - "--check-ref warn"                      # option for incorrect or missing REF allele is encountered: exit (e), warn (w), exclude (x), or set/fix (s) bad sites
+      - "--multiallelics -any"                                 # split multiallelic sites into biallelic records (-) or join biallelic sites into multiallelic records (+) {optios: snps|indels|both|any}                                         # reference sequence file
+      - "--check-ref warn"                                     # option for incorrect or missing REF allele is encountered: exit (e), warn (w), exclude (x), or set/fix (s) bad sites
     annotate:
-      - "--remove 'ID'"                           # remove the existing ID field for each variant in the input VCF file
-      - "--set-id +'%CHROM:%POS:%POS:%REF:%ALT'"  # set new ID field for each variant in the input VCF file
+      - "--remove 'ID'"                                        # remove the existing ID field for each variant in the input VCF file
+      - "--set-id +'%CHROM:%POS:%POS:%REF:%ALT'"               # set new ID field for each variant in the input VCF file
     view:
-      - "-i 'AC>0'"                               # select sites with at least one alternate allele, excluding reference-only calls (i.e., no variation)
+      - "-i 'AC>0'"                                            # select sites with at least one alternate allele, excluding reference-only calls (i.e., no variation)
 
 
 
@@ -244,17 +244,17 @@ gatk_var_split:
 # - https://gatk.broadinstitute.org/hc/en-us/articles/360035531112--How-to-Filter-variants-either-with-VQSR-or-by-hard-filtering
 # ----------------------------------------------------------------
 gatk_filter_hard:
-  dir: output/6_variant_filtering/b_gatk_variants_filter_hard/           # output directory
-  extra_snps:                                                            # hard filters for SNPs
-    - '-filter "DP < 1" --filter-name "DP1"'                               # DP = total depth of reads
-    - '-filter "QD < 2.0" --filter-name "QD2"'                             # QD = variant confidence / depth
-    - '-filter "QUAL < 30.0" --filter-name "QUAL30"'                       # QUAL = phred-scaled quality score
-    - '-filter "SOR > 3.0" --filter-name "SOR3"'                           # SOR = strand bias
-    - '-filter "FS > 60.0" --filter-name "FS60"'                           # FS = phred-scaled p-value using Fisher's exact test to detect strand bias
-    - '-filter "MQ < 40.0" --filter-name "MQ40"'                           # MQ = RMS mapping quality
-    - '-filter "MQRankSum < -12.5" --filter-name "MQRankSum-12.5"'         # MQRankSum = Z-score from Wilcoxon rank sum test of Alt vs. Ref read mapping qualities
-    - '-filter "ReadPosRankSum < -8.0" --filter-name "ReadPosRankSum-8"'   # ReadPosRankSum = Z-score from Wilcoxon rank sum test of Alt vs. Ref read position bias
-  extra_indels:                                                          # hard filters for indels, see above for explanation
+  dir: output/6_variant_filtering/b_gatk_variants_filter_hard/            # output directory
+  extra_snps:                                                             # hard filters for SNPs
+    - '-filter "DP < 1" --filter-name "DP1"'                                # DP = total depth of reads
+    - '-filter "QD < 2.0" --filter-name "QD2"'                              # QD = variant confidence / depth
+    - '-filter "QUAL < 30.0" --filter-name "QUAL30"'                        # QUAL = phred-scaled quality score
+    - '-filter "SOR > 3.0" --filter-name "SOR3"'                            # SOR = strand bias
+    - '-filter "FS > 60.0" --filter-name "FS60"'                            # FS = phred-scaled p-value using Fisher's exact test to detect strand bias
+    - '-filter "MQ < 40.0" --filter-name "MQ40"'                            # MQ = RMS mapping quality
+    - '-filter "MQRankSum < -12.5" --filter-name "MQRankSum-12.5"'          # MQRankSum = Z-score from Wilcoxon rank sum test of Alt vs. Ref read mapping qualities
+    - '-filter "ReadPosRankSum < -8.0" --filter-name "ReadPosRankSum-8"'    # ReadPosRankSum = Z-score from Wilcoxon rank sum test of Alt vs. Ref read position bias
+  extra_indels:                                                           # hard filters for indels, see above for explanation
     - '-filter "DP < 1" --filter-name "DP1"'
     - '-filter "QD < 2.0" --filter-name "QD2"'
     - '-filter "QUAL < 30.0" --filter-name "QUAL30"'
@@ -270,32 +270,34 @@ gatk_filter_soft:
   resource: 'brown,known=true,training=true,truth=true,prior=15.0'  # resource for VQSR
   sites: input/known_sites/strains.2kb.vcf.gz                       # known sites for VQSR
   extra:
-    indels_vqsr:                     # soft filters for Indels
-      - '--mode INDEL'                  # recalibration mode to employ
-      - '--max-gaussians 4'             # max number of Gaussians for the positive model {default: 8}
-      - '--trust-all-polymorphic'       # trust that the input VCF contains only polymorphic sites
-      - '--use-annotation QD'           # names of the annotations to be used for calculations
+    indels_vqsr:                              # variant quality score recalibration (vqsr) for indels
+      - '--mode INDEL'                          # recalibration mode to employ
+      - '--max-gaussians 4'                     # max number of Gaussians for the positive model {default: 8}
+      - '--trust-all-polymorphic'               # trust that the input VCF contains only polymorphic sites
+      - '--use-annotation QD'                   # names of the annotations to be used for calculations
       - '--use-annotation DP'
       - '--use-annotation FS'
       - '--use-annotation SOR'
       - '--use-annotation MQ'
-    indels_apply_vsqr:
-      - '--mode INDEL'                  # recalibration mode to employ
-      - '--exclude-filtered false'      # exclude filtered loci after applying the recalibration {default: false}
-      - '--lod-score-cutoff -2.0'       # the VQSLOD score below which to start filtering {default: null}
-    snps_vqsr:                       # soft filters for SNPs
-      - '--mode SNP'                    # recalibration mode to employ
-      - '--max-gaussians 4'             # max number of Gaussians for the positive model {default: 8}
-      - '--trust-all-polymorphic'       # trust that the input VCF contains only polymorphic sites
-      - '--use-annotation QD'           # names of the annotations to be used for calculations
+    indels_apply_vsqr:                        # apply variant quality score recalibration (vqsr) to indels
+      - '--mode INDEL'                          # recalibration mode to employ
+      - '--exclude-filtered false'              # exclude filtered loci after applying the recalibration {default: false}
+      - '--lod-score-cutoff -2.0'               # the VQSLOD score below which to start filtering {default: null}
+      - '--create-output-variant-index true'    # create a VCF index when writing a VCF file {default: false}
+    snps_vqsr:                                  # variant quality score recalibration (vqsr) for snps
+      - '--mode SNP'                            # recalibration mode to employ
+      - '--max-gaussians 4'                     # max number of Gaussians for the positive model {default: 8}
+      - '--trust-all-polymorphic'               # trust that the input VCF contains only polymorphic sites
+      - '--use-annotation QD'                   # names of the annotations to be used for calculations
       - '--use-annotation DP'
       - '--use-annotation FS'
       - '--use-annotation SOR'
       - '--use-annotation MQ'
-    snps_apply_vsqr:
-      - '--mode SNP'                   # recalibration mode to employ
-      - '--exclude-filtered false'     # exclude filtered loci after applying the recalibration {default: false}
-      - '--lod-score-cutoff 0.0'       # the VQSLOD score below which to start filtering {default: null}
+    snps_apply_vsqr:                          # apply variant quality score recalibration (vqsr) to snps
+      - '--mode SNP'                            # recalibration mode to employ
+      - '--exclude-filtered false'              # exclude filtered loci after applying the recalibration {default: false}
+      - '--lod-score-cutoff 0.0'                # the VQSLOD score below which to start filtering {default: null}
+      - '--create-output-variant-index true'    # create a VCF index when writing a VCF file {default: false}
 
 
 
@@ -310,6 +312,8 @@ gatk_merge_vcfs:
 # ----------------------------------------------------------------
 gatk_filter_pass:
   dir: output/6_variant_filtering/c_gatk_variants_merged/  # output directory
+  extra:
+    - '--exclude-filtered true'  # exclude filtered loci that are marked as filtered by previous steps {default: false}
 
 
 

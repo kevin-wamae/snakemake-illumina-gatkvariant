@@ -1,0 +1,7 @@
+channels:
+  - conda-forge
+dependencies:
+  - conda-forge::r-base=4.2.3
+  - conda-forge::r-argparse=2.2.2
+  - conda-forge::r-data.table=1.14.8
+  - conda-forge::r-tidyverse=2.0.0

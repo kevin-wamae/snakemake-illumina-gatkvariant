@@ -1,8 +1,10 @@
 name: variant-calling-gatk
 channels:
+  - conda-forge
   - bioconda
   - anaconda
 dependencies:
+  - conda-forge::openssl>=3.1.0
   - bioconda::snakemake>=7.24.2
   - bioconda::snpeff=5.1
   - anaconda::graphviz

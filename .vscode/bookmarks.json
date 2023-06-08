@@ -1,0 +1,159 @@
+{
+	"files": [
+		{
+			"path": "workflow/Snakefile",
+			"bookmarks": [
+				{
+					"line": 25,
+					"column": 11,
+					"label": ""
+				},
+				{
+					"line": 199,
+					"column": 4,
+					"label": ""
+				},
+				{
+					"line": 221,
+					"column": 6,
+					"label": ""
+				},
+				{
+					"line": 243,
+					"column": 8,
+					"label": ""
+				},
+				{
+					"line": 258,
+					"column": 11,
+					"label": ""
+				},
+				{
+					"line": 283,
+					"column": 7,
+					"label": ""
+				},
+				{
+					"line": 349,
+					"column": 8,
+					"label": ""
+				},
+				{
+					"line": 370,
+					"column": 8,
+					"label": ""
+				},
+				{
+					"line": 429,
+					"column": 10,
+					"label": ""
+				},
+				{
+					"line": 486,
+					"column": 11,
+					"label": ""
+				},
+				{
+					"line": 508,
+					"column": 9,
+					"label": ""
+				},
+				{
+					"line": 530,
+					"column": 14,
+					"label": ""
+				},
+				{
+					"line": 552,
+					"column": 10,
+					"label": ""
+				},
+				{
+					"line": 588,
+					"column": 11,
+					"label": ""
+				},
+				{
+					"line": 629,
+					"column": 8,
+					"label": ""
+				},
+				{
+					"line": 666,
+					"column": 11,
+					"label": ""
+				},
+				{
+					"line": 688,
+					"column": 7,
+					"label": ""
+				},
+				{
+					"line": 722,
+					"column": 10,
+					"label": ""
+				},
+				{
+					"line": 759,
+					"column": 8,
+					"label": ""
+				},
+				{
+					"line": 799,
+					"column": 8,
+					"label": ""
+				},
+				{
+					"line": 839,
+					"column": 11,
+					"label": ""
+				},
+				{
+					"line": 883,
+					"column": 10,
+					"label": ""
+				},
+				{
+					"line": 911,
+					"column": 8,
+					"label": ""
+				},
+				{
+					"line": 949,
+					"column": 10,
+					"label": ""
+				},
+				{
+					"line": 987,
+					"column": 12,
+					"label": ""
+				},
+				{
+					"line": 1025,
+					"column": 12,
+					"label": ""
+				},
+				{
+					"line": 1062,
+					"column": 16,
+					"label": ""
+				},
+				{
+					"line": 1096,
+					"column": 8,
+					"label": ""
+				},
+				{
+					"line": 1127,
+					"column": 11,
+					"label": ""
+				},
+				{
+					"line": 1168,
+					"column": 55,
+					"label": ""
+				}
+			]
+		}
+	]
+}
